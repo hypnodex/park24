@@ -1,0 +1,73 @@
+:root {
+  /* Brand colors */
+  --navy: rgb(31, 43, 94);
+  --navy-2: rgb(224, 230, 255);
+  --pink: rgb(255, 0, 102);
+  --pink-tint: rgba(255, 0, 102, 0.11);
+  --pink-shadow:
+    9px 9px 28px 0 rgba(230, 55, 157, 0.1),
+    38px 35px 51px 0 rgba(230, 55, 157, 0.09),
+    84px 79px 69px 0 rgba(230, 55, 157, 0.05),
+    150px 140px 82px 0 rgba(230, 55, 157, 0.01);
+  --bg: #fff;
+  --gray: rgb(242, 244, 248);
+  --gray-2: rgb(249, 249, 251);
+  --green: rgb(18, 126, 45);
+  --green-bg: rgb(224, 245, 221);
+  --green-ring: rgba(61, 143, 81, 0.24);
+
+  /* Fonts */
+  --display: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --body: "Roboto", system-ui, sans-serif;
+  --mono: "DM Mono", "JetBrains Mono", ui-monospace, monospace;
+
+  /* Fluid scale — sets the design's "1px in 1728px frame" relative to current viewport
+     We clamp so on mobile we don't go below a usable size. */
+  --vw: 100vw;
+  --design-w: 1728;
+  --fluid: calc(100vw / var(--design-w));
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+section[id],
+div[id] {
+  scroll-margin-top: 96px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--navy);
+  font-family: var(--body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+}
