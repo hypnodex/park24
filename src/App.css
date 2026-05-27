@@ -150,7 +150,7 @@
 .hero {
   position: relative;
   width: 100%;
-  min-height: clamp(620px, 70vw, 1223px);
+  height: 100vh;
   overflow: hidden;
   padding-bottom: clamp(40px, 4vw, 60px);
   margin-top: 0;
@@ -1984,7 +1984,7 @@ textarea.field-input {
 
   /* Hero */
   .hero {
-    min-height: 100svh;
+    height: 100svh;
     padding-bottom: 24px;
   }
   .hero-title {
