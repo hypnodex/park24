@@ -1175,6 +1175,43 @@
   height: 24px;
 }
 
+/* ─── Interactive Map ─────────────────────────────────────────── */
+.map-gl-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.map-section-live .contact-card {
+  z-index: 2;
+}
+.map-marker-custom .map-pointer {
+  pointer-events: none;
+}
+@media (max-width: 768px) {
+  .map-section-live {
+    min-height: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+  .map-section-live .map-gl-container {
+    position: relative;
+    height: 350px;
+    flex-shrink: 0;
+  }
+  .map-section-live .contact-card {
+    position: relative;
+    left: auto;
+    right: auto;
+    top: auto;
+    width: auto;
+    max-width: none;
+    margin: -50px 16px 24px;
+    border-radius: 20px;
+  }
+}
+
 /* ─── Pink Ticker ─────────────────────────────────────────────── */
 .ticker {
   width: 100%;
@@ -1607,7 +1644,7 @@ textarea.field-input {
 .bs-row {
   position: relative;
   display: grid;
-  grid-template-columns: 50px 70px 140px 1fr;
+  grid-template-columns: 50px 70px 170px 1fr;
   align-items: center;
   gap: 12px;
   padding: 0 clamp(14px, 1.5vw, 22px);
@@ -2143,7 +2180,7 @@ textarea.field-input {
 
   /* Box selection */
   .bs-row {
-    grid-template-columns: 45px 60px 120px 1fr;
+    grid-template-columns: 45px 60px 140px 1fr;
     height: 56px;
     padding: 0 14px;
     gap: 8px;

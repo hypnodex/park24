@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import 'maplibre-gl/dist/maplibre-gl.css'
 import './App.css'
 import { STATUS_LABEL, formatCzk, submitInquiry, useBoxes, type Box } from './store'
 import { BOX_MAP_IMAGE, BOX_POLYGONS } from './boxMapPolygons'
@@ -40,7 +41,7 @@ export default function App() {
       <BoxSelection onInquire={setInquiryBox} />
       <BoxMap onInquire={setInquiryBox} />
       <Gallery />
-      <MapContact />
+      <InteractiveMapContact />
       <Ticker />
       <Footer />
 
@@ -110,7 +111,7 @@ function Header({
             ['01', 'Úvod', 'top'],
             ['02', 'O Boxech', 'about'],
             ['03', 'Parametry & výbava', 'features'],
-            ['04', 'Nabídka boxů', 'choose'],
+            ['04', 'Nabídka boxů', 'box-map'],
             ['05', 'Galerie', 'gallery'],
             ['06', 'Lokalita & Kontakt', 'contact'],
           ].map(([num, text, anchor]) => (
@@ -153,7 +154,7 @@ function Hero() {
             <div className="glass-label">Parkovací stání</div>
           </div>
         </div>
-        <a className="glass-card dark" href="#choose">
+        <a className="glass-card dark" href="#box-map">
           <span>Výběr boxu</span>
           <svg className="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="3" y1="12" x2="21" y2="12" />
@@ -218,7 +219,7 @@ function CarouselSection() {
             style={{ '--bg': 'url(/assets/carousel-main.png)' } as React.CSSProperties}
           />
           <div className="c-card-dark">
-            <h3>Celkem je na výběr 14 boxů</h3>
+            <h3>Celkem je na výběr 12 boxů</h3>
             <div className="c-avatar" aria-hidden />
           </div>
           <div
@@ -588,9 +589,109 @@ function MapContact() {
           <div className="eyebrow">Pomůžeme vám</div>
           <h3>Lokalita &amp; Kontakt</h3>
           <div className="lines">
-            <span>Bambínova 16, Brno - Královo pole 779 00</span>
-            <span>+420 605 939 336</span>
-            <span>info@park24.cz</span>
+            <span>Esprit living s.r.o.</span>
+            <span>Šámalova 1537/60a, 615 00 Brno – Židenice</span>
+          </div>
+        </div>
+
+        <div className="contact-icons">
+          <div className="stat">
+            <div className="stat-ico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 18l4-12h10l4 12" />
+                <path d="M3 18h18" />
+                <line x1="12" y1="6" x2="12" y2="18" strokeDasharray="2 3" />
+              </svg>
+            </div>
+            <div>
+              <div className="stat-num">2 min</div>
+              <div className="stat-sub">Dálnice D1</div>
+            </div>
+          </div>
+          <div className="stat">
+            <div className="stat-ico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 21V9l9-6 9 6v12" />
+                <rect x="9" y="13" width="6" height="8" />
+                <rect x="6" y="11" width="3" height="3" />
+                <rect x="15" y="11" width="3" height="3" />
+              </svg>
+            </div>
+            <div>
+              <div className="stat-num">10 min</div>
+              <div className="stat-sub">Brno</div>
+            </div>
+          </div>
+        </div>
+
+        <button className="contact-btn">
+          <span>Kontaktujte nás</span>
+          <span className="chev">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </span>
+        </button>
+      </div>
+    </section>
+  )
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/*  Interactive Map + Contact                                                   */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+function InteractiveMapContact() {
+  const mapContainer = useRef<HTMLDivElement>(null)
+  const mapInstance = useRef<unknown>(null)
+
+  useEffect(() => {
+    if (!mapContainer.current || mapInstance.current) return
+    let cancelled = false
+
+    ;(async () => {
+      const maplibregl = await import('maplibre-gl')
+      if (cancelled || !mapContainer.current) return
+
+      const map = new maplibregl.Map({
+        container: mapContainer.current,
+        style: 'https://api.maptiler.com/maps/019e69bd-eb9a-7483-b967-25f3d93f8fdb/style.json?key=2YLradS2EtzJ9hnY3xOT',
+        center: [16.567102862812007, 49.2874580362336],
+        zoom: 15,
+        cooperativeGestures: true,
+      })
+
+      const markerEl = document.createElement('div')
+      markerEl.className = 'map-marker-custom'
+      markerEl.innerHTML = `
+        <div class="map-pointer" style="position:relative;left:0;top:0">
+          <div class="label">Park24</div>
+          <div class="ring"></div>
+          <div class="dot"></div>
+        </div>
+      `
+
+      new maplibregl.Marker({ element: markerEl, anchor: 'bottom' })
+        .setLngLat([16.567102862812007, 49.2874580362336])
+        .addTo(map)
+
+      mapInstance.current = map
+    })()
+
+    return () => { cancelled = true }
+  }, [])
+
+  return (
+    <section className="map-section map-section-live" id="live-map">
+      <div className="map-gl-container" ref={mapContainer} />
+
+      <div className="contact-card">
+        <div>
+          <div className="eyebrow">Pomůžeme vám</div>
+          <h3>Lokalita &amp; Kontakt</h3>
+          <div className="lines">
+            <span>Esprit living s.r.o.</span>
+            <span>Šámalova 1537/60a, 615 00 Brno – Židenice</span>
           </div>
         </div>
 
@@ -688,9 +789,11 @@ function Footer() {
       </div>
 
       <div className="footer-address">
-        <span>Bambínova 16, Brno - Královo pole 779 00</span>
-        <span>+420 605 939 336</span>
-        <span>info@park24.cz</span>
+        <span>Esprit living s.r.o.</span>
+        <span>Šámalova 1537/60a, 615 00 Brno – Židenice</span>
+        <span>Ing. Ondřej Menšík</span>
+        <span>Tel.: +420 737 889 777</span>
+        <span>mensik@stemfire.cz</span>
       </div>
 
       <div className="footer-meta">

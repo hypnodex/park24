@@ -154,7 +154,7 @@ function BoxesTab() {
   }
 
   async function resetToDefaults() {
-    if (!confirm('Opravdu obnovit výchozí data všech 18 boxů?')) return
+    if (!confirm('Opravdu obnovit výchozí data všech 12 boxů?')) return
     setSaving(true)
     const fresh = await resetBoxes()
     setDraft(fresh)
@@ -198,7 +198,7 @@ function BoxesTab() {
           <div role="columnheader">Box</div>
           <div role="columnheader">Stav</div>
           <div role="columnheader">Plocha (m²)</div>
-          <div role="columnheader">Cena (Kč/měs.)</div>
+          <div role="columnheader">Cena (Kč)</div>
           <div role="columnheader">Náhled</div>
         </div>
 
