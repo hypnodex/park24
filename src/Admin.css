@@ -247,6 +247,13 @@
   background: rgb(254, 222, 217);
 }
 
+.adm-loading {
+  text-align: center;
+  padding: 48px 20px;
+  font-size: 15px;
+  color: var(--muted);
+}
+
 /* ─── Table ──────────────────────────────────────────────────────── */
 .adm-table {
   background: #fff;

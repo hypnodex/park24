@@ -416,7 +416,7 @@ function BoxList({ boxes, onInquire }: { boxes: Box[]; onInquire: (b: Box) => vo
 }
 
 function BoxSelection({ onInquire }: { onInquire: (b: Box) => void }) {
-  const [boxes] = useBoxes()
+  const { boxes } = useBoxes()
 
   return (
     <section className="box-selection" id="choose">
@@ -453,7 +453,7 @@ function polygonTopCenter(points: string): { x: number; y: number } {
 }
 
 function BoxMap({ onInquire }: { onInquire: (b: Box) => void }) {
-  const [boxes] = useBoxes()
+  const { boxes } = useBoxes()
   const byId = useMemo(() => new Map(boxes.map((b) => [b.id, b])), [boxes])
 
   return (

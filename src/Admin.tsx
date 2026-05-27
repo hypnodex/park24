@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './Admin.css'
 import {
-  ADMIN_PASSWORD,
   STATUS_LABEL,
   formatCzk,
   isLoggedIn,
@@ -25,6 +24,7 @@ export default function Admin() {
 function LoginGate({ onSuccess }: { onSuccess: () => void }) {
   const [pw, setPw] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
 
   return (
     <div className="adm-shell adm-login-shell">
@@ -33,9 +33,12 @@ function LoginGate({ onSuccess }: { onSuccess: () => void }) {
       </a>
       <form
         className="adm-login"
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault()
-          if (login(pw)) {
+          setBusy(true)
+          const ok = await login(pw)
+          setBusy(false)
+          if (ok) {
             setError(null)
             onSuccess()
           } else {
@@ -53,15 +56,16 @@ function LoginGate({ onSuccess }: { onSuccess: () => void }) {
           value={pw}
           onChange={(e) => setPw(e.target.value)}
           aria-label="Heslo"
+          disabled={busy}
         />
         {error && <div className="adm-error">{error}</div>}
-        <button type="submit" className="adm-btn primary">
-          Přihlásit
+        <button type="submit" className="adm-btn primary" disabled={busy}>
+          {busy ? 'Ověřuji…' : 'Přihlásit'}
         </button>
         <a href="/" className="adm-link">← Zpět na web</a>
       </form>
       <div className="adm-hint">
-        Výchozí heslo: <code>{ADMIN_PASSWORD}</code> (změníte v <code>src/store.ts</code>)
+        Výchozí heslo: <code>park24-admin</code> (změníte env <code>ADMIN_PASSWORD</code>)
       </div>
     </div>
   )
@@ -70,9 +74,10 @@ function LoginGate({ onSuccess }: { onSuccess: () => void }) {
 /* ───────── Dashboard ───────── */
 
 function Dashboard({ onLogout }: { onLogout: () => void }) {
-  const [boxes, setBoxes] = useBoxes()
+  const { boxes, loading, update, refresh } = useBoxes()
   const [draft, setDraft] = useState<Box[]>(boxes)
   const [savedAt, setSavedAt] = useState<number | null>(null)
+  const [saving, setSaving] = useState(false)
 
   const dirty = useMemo(
     () => JSON.stringify(draft) !== JSON.stringify(boxes),
@@ -89,31 +94,29 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     setDraft((d) => d.map((b, i) => (i === idx ? { ...b, ...patch } : b)))
   }
 
-  function saveAll() {
-    setBoxes(draft)
-    setSavedAt(Date.now())
-    setTimeout(() => setSavedAt(null), 2500)
+  async function saveAll() {
+    setSaving(true)
+    const ok = await update(draft)
+    setSaving(false)
+    if (ok) {
+      setSavedAt(Date.now())
+      setTimeout(() => setSavedAt(null), 2500)
+    }
   }
 
   function discardAll() {
     setDraft(boxes)
   }
 
-  function resetToDefaults() {
+  async function resetToDefaults() {
     if (!confirm('Opravdu obnovit výchozí data všech 18 boxů?')) return
-    resetBoxes()
-    // useBoxes hook listens on the event; draft sync happens via effect below
-    setTimeout(() => {
-      const fresh = JSON.parse(localStorage.getItem('park24.boxes.v1') || 'null')
-      if (!fresh) {
-        // resetBoxes removed the key, defaults will be returned by loadBoxes via useBoxes
-        // but our local draft needs to be set from the new `boxes` ref next render
-      }
-    }, 0)
+    setSaving(true)
+    const fresh = await resetBoxes()
+    setDraft(fresh)
+    await refresh()
+    setSaving(false)
   }
 
-  // Whenever boxes (external) changes (e.g. resetBoxes), reset draft
-  // unless user has unsaved local changes.
   useMemoSync(boxes, setDraft)
 
   return (
@@ -132,89 +135,95 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         <div className="adm-eyebrow">Administrace</div>
         <h1>Správa boxů</h1>
         <p className="adm-sub">
-          Změny se ukládají do prohlížeče a okamžitě se promítnou na veřejný web (stejný počítač / stejný prohlížeč).
+          Změny se ukládají na server a okamžitě se promítnou na veřejný web pro všechny návštěvníky.
         </p>
 
-        <div className="adm-summary">
-          <SummaryCard label="Volné"        count={counts.volny}       tone="volny" />
-          <SummaryCard label="Rezervované"  count={counts.rezervovano} tone="rezervovano" />
-          <SummaryCard label="Prodané"      count={counts.prodano}     tone="prodano" />
-          <SummaryCard label="Celkem boxů"  count={draft.length}       tone="total" />
-        </div>
-
-        <div className="adm-toolbar">
-          <button className="adm-btn primary" onClick={saveAll} disabled={!dirty}>
-            Uložit změny
-          </button>
-          <button className="adm-btn ghost" onClick={discardAll} disabled={!dirty}>
-            Zahodit změny
-          </button>
-          <button className="adm-btn ghost danger" onClick={resetToDefaults}>
-            Obnovit výchozí
-          </button>
-          {savedAt && <span className="adm-saved">Uloženo ✓</span>}
-          {dirty && !savedAt && <span className="adm-dirty">Máte neuložené změny</span>}
-        </div>
-
-        <div className="adm-table" role="table" aria-label="Seznam boxů">
-          <div className="adm-tr adm-tr-head" role="row">
-            <div role="columnheader">Box</div>
-            <div role="columnheader">Stav</div>
-            <div role="columnheader">Plocha (m²)</div>
-            <div role="columnheader">Cena (Kč/měs.)</div>
-            <div role="columnheader">Náhled</div>
-          </div>
-
-          {draft.map((b, i) => (
-            <div className={`adm-tr adm-tr-${b.status}`} key={b.id} role="row">
-              <div className="adm-cell adm-cell-id">{b.id}</div>
-
-              <div className="adm-cell">
-                <select
-                  className="adm-select"
-                  value={b.status}
-                  onChange={(e) => updateBox(i, { status: e.target.value as Status })}
-                >
-                  {(Object.keys(STATUS_LABEL) as Status[]).map((s) => (
-                    <option key={s} value={s}>{STATUS_LABEL[s]}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="adm-cell">
-                <input
-                  type="number"
-                  className="adm-input"
-                  value={b.area}
-                  min={1}
-                  step={1}
-                  onChange={(e) => updateBox(i, { area: Number(e.target.value) || 0 })}
-                />
-              </div>
-
-              <div className="adm-cell">
-                <input
-                  type="number"
-                  className="adm-input"
-                  value={b.price}
-                  min={0}
-                  step={100}
-                  onChange={(e) => updateBox(i, { price: Number(e.target.value) || 0 })}
-                />
-              </div>
-
-              <div className="adm-cell adm-cell-preview">
-                <span className={`adm-badge adm-badge-${b.status}`}>
-                  {b.status === 'volny' && <span className="dot" />}
-                  {STATUS_LABEL[b.status]}
-                </span>
-                <span className="adm-preview-meta">
-                  {b.area} m² · {formatCzk(b.price)}
-                </span>
-              </div>
+        {loading ? (
+          <div className="adm-loading">Načítám data…</div>
+        ) : (
+          <>
+            <div className="adm-summary">
+              <SummaryCard label="Volné"        count={counts.volny}       tone="volny" />
+              <SummaryCard label="Rezervované"  count={counts.rezervovano} tone="rezervovano" />
+              <SummaryCard label="Prodané"      count={counts.prodano}     tone="prodano" />
+              <SummaryCard label="Celkem boxů"  count={draft.length}       tone="total" />
             </div>
-          ))}
-        </div>
+
+            <div className="adm-toolbar">
+              <button className="adm-btn primary" onClick={saveAll} disabled={!dirty || saving}>
+                {saving ? 'Ukládám…' : 'Uložit změny'}
+              </button>
+              <button className="adm-btn ghost" onClick={discardAll} disabled={!dirty || saving}>
+                Zahodit změny
+              </button>
+              <button className="adm-btn ghost danger" onClick={resetToDefaults} disabled={saving}>
+                Obnovit výchozí
+              </button>
+              {savedAt && <span className="adm-saved">Uloženo ✓</span>}
+              {dirty && !savedAt && <span className="adm-dirty">Máte neuložené změny</span>}
+            </div>
+
+            <div className="adm-table" role="table" aria-label="Seznam boxů">
+              <div className="adm-tr adm-tr-head" role="row">
+                <div role="columnheader">Box</div>
+                <div role="columnheader">Stav</div>
+                <div role="columnheader">Plocha (m²)</div>
+                <div role="columnheader">Cena (Kč/měs.)</div>
+                <div role="columnheader">Náhled</div>
+              </div>
+
+              {draft.map((b, i) => (
+                <div className={`adm-tr adm-tr-${b.status}`} key={b.id} role="row">
+                  <div className="adm-cell adm-cell-id">{b.id}</div>
+
+                  <div className="adm-cell">
+                    <select
+                      className="adm-select"
+                      value={b.status}
+                      onChange={(e) => updateBox(i, { status: e.target.value as Status })}
+                    >
+                      {(Object.keys(STATUS_LABEL) as Status[]).map((s) => (
+                        <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="adm-cell">
+                    <input
+                      type="number"
+                      className="adm-input"
+                      value={b.area}
+                      min={1}
+                      step={1}
+                      onChange={(e) => updateBox(i, { area: Number(e.target.value) || 0 })}
+                    />
+                  </div>
+
+                  <div className="adm-cell">
+                    <input
+                      type="number"
+                      className="adm-input"
+                      value={b.price}
+                      min={0}
+                      step={100}
+                      onChange={(e) => updateBox(i, { price: Number(e.target.value) || 0 })}
+                    />
+                  </div>
+
+                  <div className="adm-cell adm-cell-preview">
+                    <span className={`adm-badge adm-badge-${b.status}`}>
+                      {b.status === 'volny' && <span className="dot" />}
+                      {STATUS_LABEL[b.status]}
+                    </span>
+                    <span className="adm-preview-meta">
+                      {b.area} m² · {formatCzk(b.price)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </main>
     </div>
   )
@@ -235,7 +244,6 @@ function SummaryCard({
   )
 }
 
-/* Sync draft when external `boxes` changes (e.g. after reset). */
 function useMemoSync(boxes: Box[], setDraft: (b: Box[]) => void) {
   const ref = useRef<string>('')
   useEffect(() => {

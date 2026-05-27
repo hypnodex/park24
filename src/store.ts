@@ -1,19 +1,10 @@
-/* ════════════════════════════════════════════════════════════════════════
-   Park24 — localStorage-backed box store
-
-   Used by both the public marketing site (read-only) and the admin
-   (read + write at /admin). 18 boxes total (P3–P20).
-
-   Change the admin password by editing ADMIN_PASSWORD below.
-   ════════════════════════════════════════════════════════════════════════ */
-
 export type Status = 'volny' | 'rezervovano' | 'prodano'
 
 export interface Box {
   id: string
   status: Status
-  area: number   // m²
-  price: number  // Kč / měs.
+  area: number
+  price: number
 }
 
 export const STATUS_LABEL: Record<Status, string> = {
@@ -22,27 +13,36 @@ export const STATUS_LABEL: Record<Status, string> = {
   prodano: 'Prodaný',
 }
 
-/* ─── Single-password admin auth ─────────────────────────────────────── */
-export const ADMIN_PASSWORD = 'park24-admin'
-const AUTH_KEY = 'park24.admin.session.v1'
+/* ─── Admin auth (password validated server-side) ───────────────────── */
+const SESSION_KEY = 'park24.admin.session.v1'
 
 export function isLoggedIn(): boolean {
-  return localStorage.getItem(AUTH_KEY) === 'ok'
+  return !!localStorage.getItem(SESSION_KEY)
 }
-export function login(password: string): boolean {
-  if (password === ADMIN_PASSWORD) {
-    localStorage.setItem(AUTH_KEY, 'ok')
+
+export async function login(password: string): Promise<boolean> {
+  const res = await fetch('/api/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password }),
+  })
+  if (res.ok) {
+    localStorage.setItem(SESSION_KEY, password)
     return true
   }
   return false
 }
+
 export function logout() {
-  localStorage.removeItem(AUTH_KEY)
+  localStorage.removeItem(SESSION_KEY)
 }
 
-/* ─── Box data ───────────────────────────────────────────────────────── */
-const STORAGE_KEY = 'park24.boxes.v1'
+function getAuthHeader(): Record<string, string> {
+  const pw = localStorage.getItem(SESSION_KEY)
+  return pw ? { Authorization: `Bearer ${pw}` } : {}
+}
 
+/* ─── Box data (API-backed) ─────────────────────────────────────────── */
 export const DEFAULT_BOXES: Box[] = [
   { id: 'P3',  status: 'volny',       area: 75,  price: 4500 },
   { id: 'P4',  status: 'rezervovano', area: 75,  price: 4500 },
@@ -64,49 +64,55 @@ export const DEFAULT_BOXES: Box[] = [
   { id: 'P20', status: 'volny',       area: 150, price: 8900 },
 ]
 
-export function loadBoxes(): Box[] {
-  if (typeof window === 'undefined') return DEFAULT_BOXES
-  const raw = localStorage.getItem(STORAGE_KEY)
-  if (!raw) return DEFAULT_BOXES
+export async function fetchBoxes(): Promise<Box[]> {
   try {
-    const parsed = JSON.parse(raw) as Box[]
-    if (!Array.isArray(parsed) || parsed.length !== DEFAULT_BOXES.length) {
-      return DEFAULT_BOXES
-    }
-    return parsed
-  } catch {
-    return DEFAULT_BOXES
-  }
+    const res = await fetch('/api/boxes')
+    if (res.ok) return await res.json()
+  } catch { /* fall through */ }
+  return DEFAULT_BOXES
 }
 
-export function saveBoxes(boxes: Box[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(boxes))
-  // Notify the same-window listeners (storage event only fires cross-tab)
-  window.dispatchEvent(new CustomEvent('park24:boxes-changed'))
+export async function saveBoxes(boxes: Box[]): Promise<boolean> {
+  const res = await fetch('/api/boxes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+    body: JSON.stringify({ boxes }),
+  })
+  return res.ok
 }
 
-export function resetBoxes() {
-  localStorage.removeItem(STORAGE_KEY)
-  window.dispatchEvent(new CustomEvent('park24:boxes-changed'))
+export async function resetBoxes(): Promise<Box[]> {
+  const res = await fetch('/api/boxes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+    body: JSON.stringify({ reset: true }),
+  })
+  if (res.ok) return await res.json()
+  return DEFAULT_BOXES
 }
 
 /* ─── React hook ─────────────────────────────────────────────────────── */
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
-export function useBoxes(): [Box[], (next: Box[]) => void] {
-  const [boxes, setBoxes] = useState<Box[]>(() => loadBoxes())
+export function useBoxes() {
+  const [boxes, setBoxesLocal] = useState<Box[]>(DEFAULT_BOXES)
+  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const onChange = () => setBoxes(loadBoxes())
-    window.addEventListener('park24:boxes-changed', onChange)
-    window.addEventListener('storage', onChange)
-    return () => {
-      window.removeEventListener('park24:boxes-changed', onChange)
-      window.removeEventListener('storage', onChange)
-    }
+  const refresh = useCallback(async () => {
+    const data = await fetchBoxes()
+    setBoxesLocal(data)
+    setLoading(false)
   }, [])
 
-  return [boxes, (next) => { saveBoxes(next); setBoxes(next) }]
+  useEffect(() => { refresh() }, [refresh])
+
+  const update = useCallback(async (next: Box[]): Promise<boolean> => {
+    const ok = await saveBoxes(next)
+    if (ok) setBoxesLocal(next)
+    return ok
+  }, [])
+
+  return { boxes, loading, update, refresh }
 }
 
 /* ─── Helpers ────────────────────────────────────────────────────────── */
