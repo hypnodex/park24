@@ -318,37 +318,47 @@
 }
 .c-side-img,
 .c-main-img,
+.c-wide-img,
+.c-square-img,
+.c-tall-img,
 .c-card-lite,
 .c-card-dark {
   flex-shrink: 0;
   scroll-snap-align: start;
 }
 .c-side-img,
-.c-main-img {
+.c-main-img,
+.c-wide-img,
+.c-square-img,
+.c-tall-img {
   position: relative;
   border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
 }
 .c-side-img::before,
-.c-main-img::before {
+.c-main-img::before,
+.c-wide-img::before,
+.c-square-img::before,
+.c-tall-img::before {
   content: '';
   position: absolute;
   inset: 0;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-image: inherit;
+  background: var(--bg) center / cover no-repeat;
   transition: transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 .c-side-img,
-.c-main-img {
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+.c-main-img,
+.c-wide-img,
+.c-square-img,
+.c-tall-img {
+  background: var(--bg) center / cover no-repeat;
 }
 .c-side-img:hover::before,
-.c-main-img:hover::before {
+.c-main-img:hover::before,
+.c-wide-img:hover::before,
+.c-square-img:hover::before,
+.c-tall-img:hover::before {
   transform: scale(1.08);
 }
 .c-side-img {
@@ -358,6 +368,18 @@
 .c-main-img {
   width: clamp(300px, 40vw, 691px);
   height: clamp(340px, 39vw, 679px);
+}
+.c-wide-img {
+  width: clamp(380px, 48vw, 840px);
+  height: clamp(200px, 22vw, 380px);
+}
+.c-square-img {
+  width: clamp(260px, 30vw, 520px);
+  height: clamp(260px, 30vw, 520px);
+}
+.c-tall-img {
+  width: clamp(260px, 32vw, 560px);
+  height: clamp(300px, 34vw, 580px);
 }
 .c-card-lite {
   width: clamp(180px, 22vw, 382px);
@@ -1585,9 +1607,9 @@ textarea.field-input {
 .bs-row {
   position: relative;
   display: grid;
-  grid-template-columns: auto minmax(70px, auto) minmax(120px, auto) 1fr;
+  grid-template-columns: 50px 70px 140px 1fr;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   padding: 0 clamp(14px, 1.5vw, 22px);
   height: clamp(52px, 4.2vw, 60px);
   background: var(--gray-2);
@@ -1626,7 +1648,7 @@ textarea.field-input {
   font-size: clamp(13px, 1vw, 14px);
   color: rgba(31, 43, 94, 0.55);
   white-space: nowrap;
-  text-align: right;
+  text-align: left;
 }
 .bs-status {
   justify-self: end;
@@ -1886,7 +1908,7 @@ textarea.field-input {
 }
 
 .bm-legend {
-  display: flex;
+  display: none;
   flex-wrap: wrap;
   justify-content: center;
   gap: clamp(14px, 1.5vw, 28px);
@@ -1992,7 +2014,7 @@ textarea.field-input {
   .hero-title {
     margin-top: clamp(120px, 22vh, 200px);
     font-size: clamp(32px, 10vw, 48px);
-    text-align: left;
+    text-align: center;
     width: calc(100% - 40px);
   }
   .hero-boxes {
@@ -2029,6 +2051,21 @@ textarea.field-input {
     width: 86vw;
     max-width: 360px;
     height: 320px;
+  }
+  .c-wide-img {
+    width: 88vw;
+    max-width: 380px;
+    height: 190px;
+  }
+  .c-square-img {
+    width: 72vw;
+    max-width: 280px;
+    height: 280px;
+  }
+  .c-tall-img {
+    width: 76vw;
+    max-width: 300px;
+    height: 300px;
   }
   .c-card-lite {
     width: 50vw;
@@ -2106,7 +2143,7 @@ textarea.field-input {
 
   /* Box selection */
   .bs-row {
-    grid-template-columns: auto minmax(55px, auto) minmax(95px, auto) 1fr;
+    grid-template-columns: 45px 60px 120px 1fr;
     height: 56px;
     padding: 0 14px;
     gap: 8px;

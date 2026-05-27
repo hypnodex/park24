@@ -199,7 +199,7 @@ function CarouselSection() {
         <div className="carousel-track">
           <div
             className="c-side-img"
-            style={{ backgroundImage: 'url(/assets/carousel-side.jpg)' }}
+            style={{ '--bg': 'url(/assets/carousel-side.jpg)' } as React.CSSProperties}
           />
           <div className="c-card-lite">
             <svg className="glass-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -215,15 +215,23 @@ function CarouselSection() {
           </div>
           <div
             className="c-main-img"
-            style={{ backgroundImage: 'url(/assets/carousel-main.png)' }}
+            style={{ '--bg': 'url(/assets/carousel-main.png)' } as React.CSSProperties}
           />
           <div className="c-card-dark">
             <h3>Celkem je na výběr 14 boxů</h3>
             <div className="c-avatar" aria-hidden />
           </div>
           <div
+            className="c-wide-img"
+            style={{ '--bg': 'url(/assets/carousel-dd.png)' } as React.CSSProperties}
+          />
+          <div
             className="c-side-img"
-            style={{ backgroundImage: 'url(/assets/carousel-side.jpg)' }}
+            style={{ '--bg': 'url(/assets/carousel-parking.png)' } as React.CSSProperties}
+          />
+          <div
+            className="c-tall-img"
+            style={{ '--bg': 'url(/assets/carousel-dvcak.png)' } as React.CSSProperties}
           />
         </div>
       </div>
