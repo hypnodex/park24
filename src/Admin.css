@@ -254,6 +254,43 @@
   color: var(--muted);
 }
 
+.adm-empty {
+  text-align: center;
+  padding: 60px 20px;
+  font-size: 15px;
+  color: rgba(31, 43, 94, 0.45);
+}
+
+/* ─── Tabs ──────────────────────────────────────────────────────── */
+.adm-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 28px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 4px;
+  width: fit-content;
+}
+.adm-tab {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(31, 43, 94, 0.55);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.adm-tab:hover {
+  color: var(--navy);
+}
+.adm-tab.active {
+  background: var(--navy);
+  color: #fff;
+}
+
 /* ─── Table ──────────────────────────────────────────────────────── */
 .adm-table {
   background: #fff;
@@ -366,6 +403,40 @@
   .adm-tr > div:nth-child(4) { grid-area: price; }
   .adm-tr > .adm-cell-preview { grid-area: preview; }
   .adm-tr-head {
+    display: none;
+  }
+}
+
+/* ─── Inquiries table ────────────────────────────────────────────── */
+.adm-table-inq .adm-tr {
+  grid-template-columns: 140px 60px 1fr 120px 1fr 1fr 80px;
+}
+.adm-cell-date {
+  font-size: 13px;
+  color: rgba(31, 43, 94, 0.55);
+  font-family: var(--mono, monospace);
+}
+.adm-cell-note {
+  font-size: 13px;
+  color: rgba(31, 43, 94, 0.65);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+.adm-btn-sm {
+  padding: 4px 12px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+@media (max-width: 900px) {
+  .adm-table-inq .adm-tr {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 14px;
+  }
+  .adm-table-inq .adm-tr-head {
     display: none;
   }
 }

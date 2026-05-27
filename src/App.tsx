@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
-import { STATUS_LABEL, formatCzk, useBoxes, type Box } from './store'
+import { STATUS_LABEL, formatCzk, submitInquiry, useBoxes, type Box } from './store'
 import { BOX_MAP_IMAGE, BOX_POLYGONS } from './boxMapPolygons'
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -735,20 +735,13 @@ function InquiryModal({ box, onClose }: { box: Box; onClose: () => void }) {
     return Object.keys(next).length === 0
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!validate()) return
     setSubmitting(true)
-    // Persist locally so the inquiry isn't lost (no backend yet).
-    const inquiries = JSON.parse(
-      localStorage.getItem('park24.inquiries.v1') || '[]',
-    )
-    inquiries.push({ box: box.id, ...form, at: new Date().toISOString() })
-    localStorage.setItem('park24.inquiries.v1', JSON.stringify(inquiries))
-    setTimeout(() => {
-      setSubmitting(false)
-      setSubmitted(true)
-    }, 400)
+    await submitInquiry({ box: box.id, ...form })
+    setSubmitting(false)
+    setSubmitted(true)
   }
 
   return (

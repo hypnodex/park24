@@ -115,6 +115,70 @@ export function useBoxes() {
   return { boxes, loading, update, refresh }
 }
 
+/* ─── Inquiries (API-backed) ─────────────────────────────────────────── */
+export interface Inquiry {
+  id: string
+  box: string
+  name: string
+  phone: string
+  email: string
+  note: string
+  at: string
+}
+
+export async function submitInquiry(data: {
+  box: string; name: string; phone: string; email: string; note: string
+}): Promise<boolean> {
+  try {
+    const res = await fetch('/api/inquiries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    return res.ok
+  } catch { return false }
+}
+
+export async function fetchInquiries(): Promise<Inquiry[]> {
+  try {
+    const res = await fetch('/api/inquiries', {
+      headers: getAuthHeader(),
+    })
+    if (res.ok) return await res.json()
+  } catch { /* fall through */ }
+  return []
+}
+
+export async function deleteInquiry(id: string): Promise<boolean> {
+  const res = await fetch('/api/inquiries', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+    body: JSON.stringify({ id }),
+  })
+  return res.ok
+}
+
+export function useInquiries() {
+  const [inquiries, setInquiries] = useState<Inquiry[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const refresh = useCallback(async () => {
+    const data = await fetchInquiries()
+    setInquiries(data)
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { refresh() }, [refresh])
+
+  const remove = useCallback(async (id: string): Promise<boolean> => {
+    const ok = await deleteInquiry(id)
+    if (ok) setInquiries((prev) => prev.filter((i) => i.id !== id))
+    return ok
+  }, [])
+
+  return { inquiries, loading, refresh, remove }
+}
+
 /* ─── Helpers ────────────────────────────────────────────────────────── */
 export function formatCzk(n: number): string {
   return n.toLocaleString('cs-CZ') + ' Kč/měs.'
