@@ -388,26 +388,29 @@ function BoxList({ boxes, onInquire }: { boxes: Box[]; onInquire: (b: Box) => vo
             }}
           >
             <span className="bs-row-id">{b.id}</span>
+            <span className="bs-row-area">{b.area} m²</span>
+            <span className="bs-row-price">{formatCzk(b.price)}</span>
             <span className={`bs-status bs-status-${b.status}`}>
               {b.status === 'volny' && <span className="dot" />}
               {STATUS_LABEL[b.status]}
             </span>
-            <button
-              type="button"
-              className="bs-cta"
-              disabled={!isAvailable}
-              aria-label={`Rezervovat box ${b.id}`}
-              onClick={(e) => {
-                e.stopPropagation()
-                onInquire(b)
-              }}
-            >
-              Rezervovat
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <polyline points="14 5 21 12 14 19" />
-              </svg>
-            </button>
+            {isAvailable && (
+              <button
+                type="button"
+                className="bs-cta"
+                aria-label={`Rezervovat box ${b.id}`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onInquire(b)
+                }}
+              >
+                Rezervovat
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <polyline points="14 5 21 12 14 19" />
+                </svg>
+              </button>
+            )}
           </li>
         )
       })}

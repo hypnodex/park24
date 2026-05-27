@@ -1528,8 +1528,7 @@ textarea.field-input {
 
 /* ─── Box Selection — aerial image + status list ───────────────── */
 .box-selection {
-  margin-top: clamp(70px, 8.5vw, 145px);
-  padding: 0 var(--gutter);
+  display: none;
 }
 .bs-head {
   text-align: center;
@@ -1586,7 +1585,7 @@ textarea.field-input {
 .bs-row {
   position: relative;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(70px, auto) minmax(120px, auto) 1fr;
   align-items: center;
   gap: 16px;
   padding: 0 clamp(14px, 1.5vw, 22px);
@@ -1620,6 +1619,14 @@ textarea.field-input {
   font-size: clamp(14px, 1.1vw, 16px);
   letter-spacing: -0.01em;
   color: var(--navy);
+}
+.bs-row-area,
+.bs-row-price {
+  font-family: var(--body);
+  font-size: clamp(13px, 1vw, 14px);
+  color: rgba(31, 43, 94, 0.55);
+  white-space: nowrap;
+  text-align: right;
 }
 .bs-status {
   justify-self: end;
@@ -1664,8 +1671,6 @@ textarea.field-input {
 
 /* Hover CTA — slides in from right, replaces status visually */
 .bs-cta {
-  grid-column: 3;
-  grid-row: 1;
   position: absolute;
   right: clamp(8px, 1vw, 12px);
   top: 50%;
@@ -1693,11 +1698,8 @@ textarea.field-input {
 .bs-cta svg {
   transition: transform 0.2s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
-.bs-cta:disabled {
-  display: none;
-}
-.bs-row:hover .bs-cta:not(:disabled),
-.bs-row:focus-visible .bs-cta:not(:disabled) {
+.bs-row:hover .bs-cta,
+.bs-row:focus-visible .bs-cta {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(-50%) translateX(0);
@@ -2104,8 +2106,14 @@ textarea.field-input {
 
   /* Box selection */
   .bs-row {
+    grid-template-columns: auto minmax(55px, auto) minmax(95px, auto) 1fr;
     height: 56px;
     padding: 0 14px;
+    gap: 8px;
+  }
+  .bs-row-area,
+  .bs-row-price {
+    font-size: 12px;
   }
   .bs-status {
     font-size: 12px;
