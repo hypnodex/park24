@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import { STATUS_LABEL, formatCzk, useBoxes, type Box } from './store'
+import { BOX_MAP_IMAGE, BOX_POLYGONS } from './boxMapPolygons'
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /*  Main App                                                                   */
@@ -37,6 +38,7 @@ export default function App() {
       <CarouselSection />
       <Features />
       <BoxSelection onInquire={setInquiryBox} />
+      <BoxMap onInquire={setInquiryBox} />
       <Gallery />
       <MapContact />
       <Ticker />
@@ -364,6 +366,55 @@ const FpIcon4 = () => (
 /*  Box Selection — aerial image (left) + clickable status list (right)        */
 /* ────────────────────────────────────────────────────────────────────────── */
 
+function BoxList({ boxes, onInquire }: { boxes: Box[]; onInquire: (b: Box) => void }) {
+  return (
+    <ul className="bs-list">
+      {boxes.map((b) => {
+        const isAvailable = b.status === 'volny'
+        return (
+          <li
+            key={b.id}
+            className={`bs-row bs-row-${b.status}`}
+            tabIndex={0}
+            role="button"
+            aria-disabled={!isAvailable}
+            title={`${b.area} m² · ${formatCzk(b.price)}`}
+            onClick={() => isAvailable && onInquire(b)}
+            onKeyDown={(e) => {
+              if (isAvailable && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault()
+                onInquire(b)
+              }
+            }}
+          >
+            <span className="bs-row-id">{b.id}</span>
+            <span className={`bs-status bs-status-${b.status}`}>
+              {b.status === 'volny' && <span className="dot" />}
+              {STATUS_LABEL[b.status]}
+            </span>
+            <button
+              type="button"
+              className="bs-cta"
+              disabled={!isAvailable}
+              aria-label={`Rezervovat box ${b.id}`}
+              onClick={(e) => {
+                e.stopPropagation()
+                onInquire(b)
+              }}
+            >
+              Rezervovat
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <polyline points="14 5 21 12 14 19" />
+              </svg>
+            </button>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
 function BoxSelection({ onInquire }: { onInquire: (b: Box) => void }) {
   const [boxes] = useBoxes()
 
@@ -381,50 +432,119 @@ function BoxSelection({ onInquire }: { onInquire: (b: Box) => void }) {
         </div>
 
         {/* RIGHT — clickable rows (data from localStorage / admin) */}
-        <ul className="bs-list">
-          {boxes.map((b: Box) => {
-            const isAvailable = b.status === 'volny'
-            return (
-              <li
-                key={b.id}
-                className={`bs-row bs-row-${b.status}`}
-                tabIndex={0}
-                role="button"
-                aria-disabled={!isAvailable}
-                title={`${b.area} m² · ${formatCzk(b.price)}`}
-                onClick={() => isAvailable && onInquire(b)}
-                onKeyDown={(e) => {
-                  if (isAvailable && (e.key === 'Enter' || e.key === ' ')) {
-                    e.preventDefault()
-                    onInquire(b)
-                  }
-                }}
-              >
-                <span className="bs-row-id">{b.id}</span>
-                <span className={`bs-status bs-status-${b.status}`}>
-                  {b.status === 'volny' && <span className="dot" />}
-                  {STATUS_LABEL[b.status]}
-                </span>
-                <button
-                  type="button"
-                  className="bs-cta"
-                  disabled={!isAvailable}
-                  aria-label={`Rezervovat box ${b.id}`}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onInquire(b)
+        <BoxList boxes={boxes} onInquire={onInquire} />
+      </div>
+    </section>
+  )
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/*  Box Map — aerial visualization with clickable polygon overlays             */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+function polygonTopCenter(points: string): { x: number; y: number } {
+  const coords = points.trim().split(/\s+/).map((pair) => {
+    const [x, y] = pair.split(',').map(Number)
+    return { x, y }
+  })
+  const x = coords.reduce((sum, p) => sum + p.x, 0) / coords.length
+  const y = Math.min(...coords.map((p) => p.y))
+  return { x, y }
+}
+
+function BoxMap({ onInquire }: { onInquire: (b: Box) => void }) {
+  const [boxes] = useBoxes()
+  const byId = useMemo(() => new Map(boxes.map((b) => [b.id, b])), [boxes])
+
+  return (
+    <section className="box-map" id="box-map">
+      <div className="bm-head">
+        <div className="eyebrow">Interaktivní plán</div>
+        <h2>Vyberte box přímo z mapy</h2>
+      </div>
+
+      <div className="bm-wrap">
+        <img
+          src={BOX_MAP_IMAGE.src}
+          alt={BOX_MAP_IMAGE.alt}
+          className="bm-img"
+          draggable={false}
+        />
+
+        <svg
+          className="bm-svg"
+          viewBox={`0 0 ${BOX_MAP_IMAGE.width} ${BOX_MAP_IMAGE.height}`}
+          preserveAspectRatio="xMidYMid meet"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-label="Klikatelný plán boxů"
+        >
+          {BOX_POLYGONS.length === 0 ? (
+            <text
+              x={BOX_MAP_IMAGE.width / 2}
+              y={BOX_MAP_IMAGE.height / 2}
+              className="bm-empty"
+              textAnchor="middle"
+              dominantBaseline="middle"
+            >
+              Polygony ještě nejsou nadefinovány – upravte src/boxMapPolygons.ts
+            </text>
+          ) : (
+            BOX_POLYGONS.map((poly) => {
+              const box = byId.get(poly.id)
+              const status = box?.status ?? 'volny'
+              const interactive = status === 'volny'
+              const tooltip = box
+                ? `Box ${poly.id} – ${STATUS_LABEL[status]} · ${box.area} m² · ${formatCzk(box.price)}`
+                : `Box ${poly.id}`
+              const anchor = polygonTopCenter(poly.points)
+              return (
+                <g
+                  key={poly.id}
+                  className={`bm-box bm-box-${status}${interactive ? ' is-clickable' : ''}`}
+                  role={interactive ? 'button' : 'presentation'}
+                  tabIndex={interactive ? 0 : -1}
+                  aria-label={tooltip}
+                  aria-disabled={!interactive}
+                  onClick={() => {
+                    if (interactive && box) onInquire(box)
+                  }}
+                  onKeyDown={(e) => {
+                    if (!interactive || !box) return
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      onInquire(box)
+                    }
                   }}
                 >
-                  Rezervovat
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="3" y1="12" x2="21" y2="12" />
-                    <polyline points="14 5 21 12 14 19" />
-                  </svg>
-                </button>
-              </li>
-            )
-          })}
-        </ul>
+                  <polygon points={poly.points} />
+                  <g transform={`translate(${anchor.x}, ${anchor.y})`}>
+                    <g className="bm-pill" aria-hidden>
+                      <foreignObject x="0" y="0" width="1" height="1" overflow="visible">
+                        <div className={`bm-pill-badge bm-pill-${status}`}>
+                          {status === 'volny' && <span className="dot" />}
+                          <span className="bm-pill-id">{poly.id}</span>
+                          <span className="bm-pill-sep">·</span>
+                          <span>{STATUS_LABEL[status]}</span>
+                        </div>
+                      </foreignObject>
+                    </g>
+                  </g>
+                  <title>{tooltip}</title>
+                </g>
+              )
+            })
+          )}
+        </svg>
+      </div>
+
+      <div className="bm-legend" aria-hidden>
+        <span className="bm-legend-item bm-box-volny">Volný</span>
+        <span className="bm-legend-item bm-box-rezervovano">Rezervovaný</span>
+        <span className="bm-legend-item bm-box-prodano">Prodaný</span>
+      </div>
+
+      <div className="bm-list">
+        <BoxList boxes={boxes} onInquire={onInquire} />
       </div>
     </section>
   )

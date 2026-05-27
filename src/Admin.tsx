@@ -100,7 +100,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   }
 
   function resetToDefaults() {
-    if (!confirm('Opravdu obnovit výchozí data všech 12 boxů?')) return
+    if (!confirm('Opravdu obnovit výchozí data všech 18 boxů?')) return
     resetBoxes()
     // useBoxes hook listens on the event; draft sync happens via effect below
     setTimeout(() => {

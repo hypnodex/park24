@@ -1721,6 +1721,202 @@ textarea.field-input {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   Box Map — aerial visualization with clickable polygon overlays
+   ═══════════════════════════════════════════════════════════════════ */
+.box-map {
+  margin-top: clamp(70px, 8.5vw, 145px);
+  padding: 0 var(--gutter);
+}
+.bm-head {
+  text-align: center;
+  margin-bottom: clamp(36px, 4vw, 64px);
+}
+.bm-head .eyebrow {
+  margin-bottom: clamp(12px, 1.5vw, 20px);
+}
+.bm-head h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(32px, 4.5vw, 64px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--navy);
+}
+
+.bm-wrap {
+  position: relative;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  border-radius: clamp(12px, 1.2vw, 24px);
+  overflow: visible;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  background: #0b0d12;
+}
+.bm-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: inherit;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.bm-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.bm-box {
+  pointer-events: auto;
+  outline: none;
+}
+.bm-box.is-clickable { cursor: pointer; }
+.bm-box polygon {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  transition: fill 120ms ease, stroke 120ms ease;
+}
+
+/* Available — green hover */
+.bm-box-volny:hover polygon,
+.bm-box-volny:focus-visible polygon {
+  fill: rgba(34, 197, 94, 0.45);
+  stroke: #22c55e;
+}
+
+/* Hover pill — 20px above polygon top edge */
+.bm-pill {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+.bm-box:hover .bm-pill,
+.bm-box:focus-visible .bm-pill {
+  opacity: 1;
+}
+.bm-pill-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: max-content;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(31, 43, 94, 0.14);
+  transform: translate(-50%, calc(-100% - 16px));
+  transition: transform 120ms ease;
+}
+.bm-box:hover .bm-pill-badge,
+.bm-box:focus-visible .bm-pill-badge {
+  transform: translate(-50%, calc(-100% - 20px));
+}
+.bm-pill-id {
+  font-weight: 600;
+}
+.bm-pill-sep {
+  opacity: 0.45;
+}
+.bm-pill-volny {
+  background: var(--green-bg);
+  color: var(--green);
+}
+.bm-pill-volny .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  position: relative;
+  flex-shrink: 0;
+}
+.bm-pill-volny .dot::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: var(--green-ring);
+}
+.bm-pill-rezervovano {
+  background: rgb(254, 222, 217);
+  color: rgb(192, 63, 88);
+}
+.bm-pill-prodano {
+  background: rgb(251, 219, 219);
+  color: rgb(179, 58, 58);
+}
+
+/* Reserved — amber hover */
+.bm-box-rezervovano:hover polygon,
+.bm-box-rezervovano:focus-visible polygon {
+  fill: rgba(245, 158, 11, 0.4);
+  stroke: #f59e0b;
+}
+
+/* Sold — red, non-clickable but still highlights for context */
+.bm-box-prodano { cursor: not-allowed; }
+.bm-box-prodano:hover polygon {
+  fill: rgba(239, 68, 68, 0.35);
+  stroke: #ef4444;
+}
+
+.bm-empty {
+  fill: rgba(255, 255, 255, 0.92);
+  font-family: var(--display, system-ui), sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.55);
+  stroke-width: 4;
+}
+
+.bm-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(14px, 1.5vw, 28px);
+  max-width: var(--max-w);
+  margin: clamp(20px, 2.5vw, 36px) auto 0;
+  font-size: clamp(13px, 1vw, 15px);
+  color: var(--navy);
+}
+.bm-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.bm-legend-item::before {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1.5px solid currentColor;
+}
+.bm-legend-item.bm-box-volny { color: #16a34a; }
+.bm-legend-item.bm-box-volny::before { background: rgba(34, 197, 94, 0.45); border-color: #22c55e; }
+.bm-legend-item.bm-box-rezervovano { color: #d97706; }
+.bm-legend-item.bm-box-rezervovano::before { background: rgba(245, 158, 11, 0.4); }
+.bm-legend-item.bm-box-prodano { color: #dc2626; }
+.bm-legend-item.bm-box-prodano::before { background: rgba(239, 68, 68, 0.35); }
+
+.bm-list {
+  max-width: var(--max-w);
+  margin: clamp(36px, 4vw, 64px) auto 0;
+  width: 100%;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    Tablet breakpoint
    ═══════════════════════════════════════════════════════════════════ */
 @media (max-width: 1024px) {
