@@ -151,14 +151,15 @@
   position: relative;
   width: 100%;
   min-height: clamp(620px, 70vw, 1223px);
-  overflow: clip;
+  overflow: hidden;
   padding-bottom: clamp(40px, 4vw, 60px);
+  margin-top: 0;
 }
 .hero-bg {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background: url('/assets/Opening_bg.png') top center/cover no-repeat;
+  background: url('/assets/Opening_bg.png') center center / cover no-repeat;
 }
 .hero-bg::after {
   content: '';
@@ -183,9 +184,10 @@
 .hero-boxes {
   position: absolute;
   z-index: 1;
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: clamp(60px, 7vw, 127px);
-  transform: translateX(-50%);
+  margin-inline: auto;
   width: min(1174px, calc(100% - 48px));
   display: grid;
   grid-template-columns: repeat(3, 1fr);
