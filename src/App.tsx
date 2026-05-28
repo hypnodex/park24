@@ -150,7 +150,7 @@ function Hero() {
         <div className="glass-card">
           <img className="glass-icon" src="/assets/car-01.svg" alt="" aria-hidden />
           <div>
-            <div className="glass-num light">16x</div>
+            <div className="glass-num">16x</div>
             <div className="glass-label">Parkovací stání</div>
           </div>
         </div>
