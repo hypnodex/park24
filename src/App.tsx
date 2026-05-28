@@ -143,7 +143,7 @@ function Hero() {
         <div className="glass-card">
           <img className="glass-icon" src="/assets/grid-02.svg" alt="" aria-hidden />
           <div>
-            <div className="glass-num">190m²</div>
+            <div className="glass-num">305m²</div>
             <div className="glass-label">Skladová plocha</div>
           </div>
         </div>
@@ -210,7 +210,7 @@ function CarouselSection() {
               <path d="M21 16v3a2 2 0 0 1-2 2h-3" />
             </svg>
             <div>
-              <div className="glass-num">190m²</div>
+              <div className="glass-num">305m²</div>
               <div className="glass-label">Skladová plocha</div>
             </div>
           </div>
