@@ -219,7 +219,7 @@ function CarouselSection() {
             style={{ '--bg': 'url(/assets/carousel-main.png)' } as React.CSSProperties}
           />
           <div className="c-card-dark">
-            <h3>Celkem je na výběr 12 boxů</h3>
+            <h3>Celkem je na výběr {BOX_POLYGONS.length} boxů</h3>
             <div className="c-avatar" aria-hidden />
           </div>
           <div

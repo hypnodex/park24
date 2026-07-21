@@ -4,18 +4,23 @@ import { Redis } from '@upstash/redis'
 const KV_KEY = 'park24:boxes'
 
 const DEFAULT_BOXES = [
-  { id: 'P3',  status: 'volny',       area: 305, price: 20000000 },
-  { id: 'P4',  status: 'rezervovano', area: 305, price: 20000000 },
-  { id: 'P5',  status: 'prodano',     area: 305, price: 20000000 },
-  { id: 'P6',  status: 'volny',       area: 305, price: 20000000 },
-  { id: 'P7',  status: 'volny',       area: 305, price: 20000000 },
-  { id: 'P8',  status: 'volny',       area: 305, price: 20000000 },
-  { id: 'P9',  status: 'volny',       area: 305, price: 20000000 },
-  { id: 'P10', status: 'volny',       area: 305, price: 20000000 },
-  { id: 'P11', status: 'volny',       area: 305, price: 20000000 },
-  { id: 'P12', status: 'volny',       area: 305, price: 20000000 },
-  { id: 'P13', status: 'volny',       area: 305, price: 20000000 },
-  { id: 'P14', status: 'volny',       area: 305, price: 20000000 },
+  { id: 'P1',  status: 'volny', area: 305, price: 20000000 },
+  { id: 'P2',  status: 'volny', area: 305, price: 20000000 },
+  { id: 'P3',  status: 'volny', area: 305, price: 20000000 },
+  { id: 'P4',  status: 'volny', area: 305, price: 20000000 },
+  { id: 'P5',  status: 'volny', area: 305, price: 20000000 },
+  { id: 'P6',  status: 'volny', area: 305, price: 20000000 },
+  { id: 'P7',  status: 'volny', area: 305, price: 20000000 },
+  { id: 'P8',  status: 'volny', area: 305, price: 20000000 },
+  { id: 'P9',  status: 'volny', area: 305, price: 20000000 },
+  { id: 'P10', status: 'volny', area: 305, price: 20000000 },
+  { id: 'P11', status: 'volny', area: 305, price: 20000000 },
+  { id: 'P12', status: 'volny', area: 305, price: 20000000 },
+  { id: 'P13', status: 'volny', area: 305, price: 20000000 },
+  { id: 'P14', status: 'volny', area: 305, price: 20000000 },
+  { id: 'P15', status: 'volny', area: 305, price: 20000000 },
+  { id: 'P16', status: 'volny', area: 305, price: 20000000 },
+  { id: 'P17', status: 'volny', area: 305, price: 20000000 },
 ]
 
 function getRedis(): Redis | null {
