@@ -1,26 +1,24 @@
-import { StrictMode, useEffect, useState } from 'react'
+import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import App from './App.tsx'
+import App, { BoxDetail } from './App.tsx'
 import Admin from './Admin.tsx'
+import { usePath } from './router.ts'
 
 /**
- * Minimal pathname router. The site has two routes:
- *   /        → public marketing site (App)
- *   /admin   → password-gated admin (Admin)
+ * Minimal pathname router. Routes:
+ *   /          → public marketing site (App)
+ *   /box/:id   → single box detail page (BoxDetail)
+ *   /admin     → password-gated admin (Admin)
  *
- * Pure SPA: no server needed beyond Vite's history-fallback (already on).
+ * Pure SPA: no server needed beyond Vite history-fallback + vercel.json rewrites.
  */
 function Root() {
-  const [path, setPath] = useState(() => window.location.pathname)
-
-  useEffect(() => {
-    const onPop = () => setPath(window.location.pathname)
-    window.addEventListener('popstate', onPop)
-    return () => window.removeEventListener('popstate', onPop)
-  }, [])
+  const path = usePath()
 
   if (path.startsWith('/admin')) return <Admin />
+  const box = path.match(/^\/box\/([^/]+)\/?$/)
+  if (box) return <BoxDetail id={decodeURIComponent(box[1])} />
   return <App />
 }
 

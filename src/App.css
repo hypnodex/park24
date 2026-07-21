@@ -1644,9 +1644,9 @@ textarea.field-input {
 .bs-row {
   position: relative;
   display: grid;
-  grid-template-columns: 50px 70px 170px 1fr;
+  grid-template-columns: 0.7fr 1.1fr 1.4fr 1.4fr 1.3fr 46px 20px;
   align-items: center;
-  gap: 12px;
+  gap: clamp(14px, 1.6vw, 26px);
   padding: 0 clamp(14px, 1.5vw, 22px);
   height: clamp(52px, 4.2vw, 60px);
   background: var(--gray-2);
@@ -1664,13 +1664,9 @@ textarea.field-input {
   box-shadow: 0 8px 24px rgba(31, 43, 94, 0.08);
   transform: translateY(-1px);
 }
-.bs-row-prodano,
-.bs-row-rezervovano {
-  cursor: not-allowed;
-}
 .bs-row-prodano:hover,
 .bs-row-rezervovano:hover {
-  transform: none;
+  transform: translateY(-1px);
 }
 .bs-row-id {
   font-family: 'Inter', sans-serif;
@@ -1680,15 +1676,20 @@ textarea.field-input {
   color: var(--navy);
 }
 .bs-row-area,
-.bs-row-price {
+.bs-row-price,
+.bs-row-perm2 {
   font-family: var(--body);
   font-size: clamp(13px, 1vw, 14px);
   color: rgba(31, 43, 94, 0.55);
   white-space: nowrap;
   text-align: left;
 }
+.bs-row-perm2 {
+  color: rgba(31, 43, 94, 0.38);
+  font-size: clamp(12px, 0.95vw, 13px);
+}
 .bs-status {
-  justify-self: end;
+  justify-self: start;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -1728,60 +1729,46 @@ textarea.field-input {
   color: rgb(179, 58, 58);
 }
 
-/* Hover CTA — slides in from right, replaces status visually */
-.bs-cta {
-  position: absolute;
-  right: clamp(8px, 1vw, 12px);
-  top: 50%;
-  transform: translateY(-50%) translateX(8px);
+/* Per-row PDF download button */
+.bs-pdf {
+  justify-self: center;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  height: clamp(40px, 3.4vw, 44px);
-  padding: 0 16px;
-  border: none;
-  border-radius: 10px;
-  background: var(--pink);
-  color: #fff;
-  font-family: var(--body);
-  font-weight: 500;
-  font-size: 14px;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid rgba(31, 43, 94, 0.12);
+  border-radius: 9px;
+  background: #fff;
+  color: rgba(31, 43, 94, 0.55);
   cursor: pointer;
-  opacity: 0;
-  pointer-events: none;
-  box-shadow: 0 6px 20px rgba(255, 0, 102, 0.28);
-  transition: opacity 0.2s ease,
-    transform 0.25s cubic-bezier(0.22, 0.61, 0.36, 1),
-    filter 0.15s ease, box-shadow 0.2s ease;
+  transition: color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease,
+    transform 0.15s ease;
 }
-.bs-cta svg {
-  transition: transform 0.2s cubic-bezier(0.22, 0.61, 0.36, 1);
+.bs-pdf:hover {
+  color: var(--pink);
+  border-color: var(--pink);
+  box-shadow: 0 4px 14px rgba(255, 0, 102, 0.16);
+  transform: translateY(-1px);
 }
-.bs-row:hover .bs-cta,
-.bs-row:focus-visible .bs-cta {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(-50%) translateX(0);
+.bs-pdf:focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: 2px;
 }
-.bs-cta:hover {
-  filter: brightness(1.06);
-  box-shadow: 0 12px 28px rgba(255, 0, 102, 0.36);
+
+/* Row-end chevron — hints the row opens the box detail page */
+.bs-chevron {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  color: rgba(31, 43, 94, 0.26);
+  transition: color 0.18s ease, transform 0.18s ease;
 }
-.bs-cta:hover svg {
-  transform: translateX(3px);
-}
-/* When CTA is visible, fade the status badge */
-.bs-row:hover .bs-status,
-.bs-row:focus-visible .bs-status {
-  opacity: 0;
-  transform: translateX(8px);
-}
-.bs-row-rezervovano:hover .bs-status,
-.bs-row-prodano:hover .bs-status,
-.bs-row-rezervovano:focus-visible .bs-status,
-.bs-row-prodano:focus-visible .bs-status {
-  opacity: 1;
-  transform: none;
+.bs-row:hover .bs-chevron,
+.bs-row:focus-visible .bs-chevron {
+  color: var(--pink);
+  transform: translateX(2px);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -2178,25 +2165,27 @@ textarea.field-input {
     max-width: 100%;
   }
 
-  /* Box selection */
+  /* Box selection — compact: hide price & price/m², keep area + status + PDF */
   .bs-row {
-    grid-template-columns: 45px 60px 140px 1fr;
+    grid-template-columns: 42px 64px 1fr 32px 14px;
     height: 56px;
-    padding: 0 14px;
+    padding: 0 12px;
     gap: 8px;
   }
-  .bs-row-area,
-  .bs-row-price {
+  .bs-row-price,
+  .bs-row-perm2 {
+    display: none;
+  }
+  .bs-row-area {
     font-size: 12px;
   }
   .bs-status {
     font-size: 12px;
     padding: 0 10px;
   }
-  .bs-cta {
-    height: 40px;
-    padding: 0 12px;
-    font-size: 13px;
+  .bs-pdf {
+    width: 32px;
+    height: 32px;
   }
   .bs-pin {
     min-width: 24px;
@@ -2214,5 +2203,327 @@ textarea.field-input {
     margin-top: 40px;
     flex-direction: column;
     gap: 8px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Box detail page — /box/:id
+   ═══════════════════════════════════════════════════════════════════ */
+.box-detail-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--gray-2);
+}
+.bd {
+  flex: 1;
+  width: 100%;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: clamp(96px, 12vh, 138px) var(--gutter) clamp(56px, 8vw, 104px);
+}
+
+.bd-crumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--body);
+  font-size: 14px;
+  color: rgba(31, 43, 94, 0.5);
+  margin-bottom: clamp(20px, 3vw, 36px);
+}
+.bd-crumb a {
+  color: rgba(31, 43, 94, 0.6);
+  text-decoration: none;
+}
+.bd-crumb a:hover {
+  color: var(--pink);
+}
+.bd-crumb-current {
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.bd-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(320px, 1fr);
+  grid-template-areas:
+    "media panel"
+    "info  panel";
+  column-gap: clamp(24px, 3.5vw, 56px);
+  row-gap: clamp(24px, 3vw, 40px);
+  align-items: start;
+}
+.bd-media {
+  grid-area: media;
+}
+.bd-panel {
+  grid-area: panel;
+}
+.bd-info {
+  grid-area: info;
+}
+
+/* Media — aerial with the box highlighted */
+.bd-map {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--gray);
+  box-shadow: 0 18px 50px rgba(31, 43, 94, 0.12);
+}
+.bd-map img {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+}
+.bd-map-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.bd-poly {
+  fill: rgba(31, 43, 94, 0.05);
+  stroke: rgba(255, 255, 255, 0.28);
+  stroke-width: 1;
+  transition: fill 0.2s ease;
+}
+.bd-poly.active {
+  fill: rgba(255, 0, 102, 0.28);
+  stroke: var(--pink);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+/* Info panel */
+.bd-panel {
+  position: sticky;
+  top: 100px;
+  background: #fff;
+  border: 1px solid rgba(31, 43, 94, 0.08);
+  border-radius: 18px;
+  padding: clamp(22px, 2.6vw, 34px);
+  box-shadow: 0 14px 44px rgba(31, 43, 94, 0.07);
+}
+.bd-eyebrow {
+  font-family: var(--body);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pink);
+}
+.bd-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 10px 0 2px;
+}
+.bd-title-row h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(32px, 3.6vw, 50px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--navy);
+}
+.bd-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 13px;
+  border-radius: 999px;
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.bd-status .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.bd-status-volny {
+  background: var(--green-bg);
+  color: var(--green);
+}
+.bd-status-rezervovano {
+  background: rgb(254, 222, 217);
+  color: rgb(192, 63, 88);
+}
+.bd-status-prodano {
+  background: rgb(251, 219, 219);
+  color: rgb(179, 58, 58);
+}
+.bd-price {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(26px, 3vw, 34px);
+  color: var(--navy);
+  margin-top: 14px;
+}
+.bd-subprice {
+  font-family: var(--body);
+  font-size: 15px;
+  color: rgba(31, 43, 94, 0.5);
+  margin-top: 3px;
+}
+
+.bd-specs {
+  margin: clamp(20px, 3vw, 28px) 0 clamp(18px, 2.4vw, 24px);
+}
+.bd-spec {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid rgba(31, 43, 94, 0.08);
+}
+.bd-spec dt {
+  font-family: var(--body);
+  font-size: 14px;
+  color: rgba(31, 43, 94, 0.55);
+}
+.bd-spec dd {
+  margin: 0;
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--navy);
+  text-align: right;
+}
+
+.bd-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bd-btn {
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: filter 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+    box-shadow 0.15s ease, background 0.15s ease;
+}
+.bd-btn.primary {
+  background: var(--pink);
+  color: #fff;
+  box-shadow: 0 10px 26px rgba(255, 0, 102, 0.26);
+}
+.bd-btn.primary:hover {
+  filter: brightness(1.06);
+}
+.bd-btn.primary:disabled {
+  background: rgba(31, 43, 94, 0.1);
+  color: rgba(31, 43, 94, 0.45);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.bd-btn.ghost {
+  background: #fff;
+  border-color: rgba(31, 43, 94, 0.14);
+  color: var(--navy);
+}
+.bd-btn.ghost:hover {
+  border-color: var(--pink);
+  color: var(--pink);
+}
+.bd-back {
+  display: inline-block;
+  margin-top: 16px;
+  font-family: var(--body);
+  font-size: 14px;
+  color: rgba(31, 43, 94, 0.55);
+  text-decoration: none;
+}
+.bd-back:hover {
+  color: var(--pink);
+}
+
+/* Text sections stacked under the photo */
+.bd-info {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(22px, 3vw, 32px);
+}
+.bd-info h2 {
+  margin: 0 0 14px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(22px, 2.4vw, 30px);
+  color: var(--navy);
+}
+.bd-info p {
+  margin: 0;
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.7;
+  color: rgba(31, 43, 94, 0.7);
+}
+.bd-equip {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.bd-equip li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--body);
+  font-weight: 500;
+  color: var(--navy);
+}
+.bd-equip svg {
+  color: var(--green);
+  flex: none;
+}
+
+/* States */
+.bd-loading,
+.bd-notfound {
+  text-align: center;
+  padding: clamp(120px, 22vh, 240px) var(--gutter);
+  font-family: var(--body);
+  color: rgba(31, 43, 94, 0.6);
+}
+.bd-notfound h1 {
+  font-family: var(--display);
+  color: var(--navy);
+  margin: 0 0 10px;
+}
+.bd-notfound .bd-btn {
+  display: inline-flex;
+  margin-top: 22px;
+  padding: 0 22px;
+  text-decoration: none;
+}
+
+@media (max-width: 1024px) {
+  .bd-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "media"
+      "panel"
+      "info";
+  }
+  .bd-panel {
+    position: static;
   }
 }

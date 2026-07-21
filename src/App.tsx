@@ -3,6 +3,8 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import './App.css'
 import { STATUS_LABEL, formatCzk, submitInquiry, useBoxes, type Box } from './store'
 import { BOX_MAP_IMAGE, BOX_POLYGONS } from './boxMapPolygons'
+import { navigate } from './router'
+import { generateBoxPdf } from './boxPdf'
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /*  Main App                                                                   */
@@ -11,7 +13,6 @@ import { BOX_MAP_IMAGE, BOX_POLYGONS } from './boxMapPolygons'
 export default function App() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [inquiryBox, setInquiryBox] = useState<Box | null>(null)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
@@ -22,10 +23,7 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setMenuOpen(false)
-        setInquiryBox(null)
-      }
+      if (e.key === 'Escape') setMenuOpen(false)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -38,18 +36,19 @@ export default function App() {
       <Intro />
       <CarouselSection />
       <Features />
-      <BoxSelection onInquire={setInquiryBox} />
-      <BoxMap onInquire={setInquiryBox} />
+      <BoxSelection />
+      <BoxMap />
       <Gallery />
       <InteractiveMapContact />
       <Ticker />
       <Footer />
-
-      {inquiryBox && (
-        <InquiryModal box={inquiryBox} onClose={() => setInquiryBox(null)} />
-      )}
     </>
   )
+}
+
+/** Navigate to a box's detail page. */
+function openBox(id: string) {
+  navigate(`/box/${encodeURIComponent(id)}`)
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -60,10 +59,13 @@ function Header({
   scrolled,
   menuOpen,
   setMenuOpen,
+  linkBase = '',
 }: {
   scrolled: boolean
   menuOpen: boolean
   setMenuOpen: (v: boolean) => void
+  /** Prefix for nav anchors; '/' on subpages so links jump back to the home sections. */
+  linkBase?: string
 }) {
   const wrapRef = useRef<HTMLDivElement>(null)
 
@@ -79,7 +81,7 @@ function Header({
 
   return (
     <header className={`header-fixed${scrolled ? ' scrolled' : ''}`} id="header-fixed">
-      <a href="#top" className="logo" aria-label="Park24">
+      <a href={`${linkBase}#top`} className="logo" aria-label="Park24">
         <img src="/assets/logo_park24.svg" alt="Park24" />
       </a>
       <div className="menu-wrap" ref={wrapRef}>
@@ -115,7 +117,7 @@ function Header({
             ['05', 'Galerie', 'gallery'],
             ['06', 'Lokalita & Kontakt', 'contact'],
           ].map(([num, text, anchor]) => (
-            <a key={anchor} href={`#${anchor}`} onClick={() => setMenuOpen(false)}>
+            <a key={anchor} href={`${linkBase}#${anchor}`} onClick={() => setMenuOpen(false)}>
               <span className="mp-num">{num}</span>
               <span className="mp-text">{text}</span>
             </a>
@@ -375,51 +377,60 @@ const FpIcon4 = () => (
 /*  Box Selection — aerial image (left) + clickable status list (right)        */
 /* ────────────────────────────────────────────────────────────────────────── */
 
-function BoxList({ boxes, onInquire }: { boxes: Box[]; onInquire: (b: Box) => void }) {
+const PdfIcon = () => (
+  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <path d="M9 15h1.5a1.5 1.5 0 0 0 0-3H9v5" />
+    <path d="M4 19v-7" style={{ display: 'none' }} />
+  </svg>
+)
+
+function BoxList({ boxes }: { boxes: Box[] }) {
   return (
     <ul className="bs-list">
       {boxes.map((b) => {
-        const isAvailable = b.status === 'volny'
+        const perM2 = formatCzk(Math.round(b.price / b.area))
         return (
           <li
             key={b.id}
             className={`bs-row bs-row-${b.status}`}
             tabIndex={0}
             role="button"
-            aria-disabled={!isAvailable}
-            title={`${b.area} m² · ${formatCzk(b.price)}`}
-            onClick={() => isAvailable && onInquire(b)}
+            title={`Box ${b.id} — zobrazit detail`}
+            onClick={() => openBox(b.id)}
             onKeyDown={(e) => {
-              if (isAvailable && (e.key === 'Enter' || e.key === ' ')) {
+              if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
-                onInquire(b)
+                openBox(b.id)
               }
             }}
           >
             <span className="bs-row-id">{b.id}</span>
             <span className="bs-row-area">{b.area} m²</span>
             <span className="bs-row-price">{formatCzk(b.price)}</span>
+            <span className="bs-row-perm2">{perM2}/m²</span>
             <span className={`bs-status bs-status-${b.status}`}>
               {b.status === 'volny' && <span className="dot" />}
               {STATUS_LABEL[b.status]}
             </span>
-            {isAvailable && (
-              <button
-                type="button"
-                className="bs-cta"
-                aria-label={`Rezervovat box ${b.id}`}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onInquire(b)
-                }}
-              >
-                Rezervovat
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="3" y1="12" x2="21" y2="12" />
-                  <polyline points="14 5 21 12 14 19" />
-                </svg>
-              </button>
-            )}
+            <button
+              type="button"
+              className="bs-pdf"
+              aria-label={`Stáhnout kartu boxu ${b.id} v PDF`}
+              title="Stáhnout kartu (PDF)"
+              onClick={(e) => {
+                e.stopPropagation()
+                generateBoxPdf(b)
+              }}
+            >
+              <PdfIcon />
+            </button>
+            <span className="bs-chevron" aria-hidden>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </span>
           </li>
         )
       })}
@@ -427,7 +438,7 @@ function BoxList({ boxes, onInquire }: { boxes: Box[]; onInquire: (b: Box) => vo
   )
 }
 
-function BoxSelection({ onInquire }: { onInquire: (b: Box) => void }) {
+function BoxSelection() {
   const { boxes } = useBoxes()
 
   return (
@@ -444,7 +455,7 @@ function BoxSelection({ onInquire }: { onInquire: (b: Box) => void }) {
         </div>
 
         {/* RIGHT — clickable rows (data from localStorage / admin) */}
-        <BoxList boxes={boxes} onInquire={onInquire} />
+        <BoxList boxes={boxes} />
       </div>
     </section>
   )
@@ -464,7 +475,7 @@ function polygonTopCenter(points: string): { x: number; y: number } {
   return { x, y }
 }
 
-function BoxMap({ onInquire }: { onInquire: (b: Box) => void }) {
+function BoxMap() {
   const { boxes } = useBoxes()
   const byId = useMemo(() => new Map(boxes.map((b) => [b.id, b])), [boxes])
 
@@ -504,7 +515,6 @@ function BoxMap({ onInquire }: { onInquire: (b: Box) => void }) {
             BOX_POLYGONS.map((poly) => {
               const box = byId.get(poly.id)
               const status = box?.status ?? 'volny'
-              const interactive = status === 'volny'
               const tooltip = box
                 ? `Box ${poly.id} – ${STATUS_LABEL[status]} · ${box.area} m² · ${formatCzk(box.price)}`
                 : `Box ${poly.id}`
@@ -512,19 +522,15 @@ function BoxMap({ onInquire }: { onInquire: (b: Box) => void }) {
               return (
                 <g
                   key={poly.id}
-                  className={`bm-box bm-box-${status}${interactive ? ' is-clickable' : ''}`}
-                  role={interactive ? 'button' : 'presentation'}
-                  tabIndex={interactive ? 0 : -1}
-                  aria-label={tooltip}
-                  aria-disabled={!interactive}
-                  onClick={() => {
-                    if (interactive && box) onInquire(box)
-                  }}
+                  className={`bm-box bm-box-${status} is-clickable`}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${tooltip} – zobrazit detail`}
+                  onClick={() => openBox(poly.id)}
                   onKeyDown={(e) => {
-                    if (!interactive || !box) return
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault()
-                      onInquire(box)
+                      openBox(poly.id)
                     }
                   }}
                 >
@@ -556,7 +562,7 @@ function BoxMap({ onInquire }: { onInquire: (b: Box) => void }) {
       </div>
 
       <div className="bm-list">
-        <BoxList boxes={boxes} onInquire={onInquire} />
+        <BoxList boxes={boxes} />
       </div>
     </section>
   )
@@ -919,5 +925,182 @@ function Field({
       )}
       {error && <span className="field-msg">{error}</span>}
     </label>
+  )
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/*  Box detail page — /box/:id                                                 */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+export function BoxDetail({ id }: { id: string }) {
+  const { boxes, loading } = useBoxes()
+  const [scrolled, setScrolled] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [reserving, setReserving] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const box = boxes.find((b) => b.id === id)
+
+  useEffect(() => {
+    document.title = `Box ${id} — Park24`
+    return () => { document.title = 'Park24' }
+  }, [id])
+
+  const goHome = (e: React.MouseEvent) => { e.preventDefault(); navigate('/') }
+
+  if (loading && !box) {
+    return (
+      <div className="box-detail-page">
+        <Header scrolled menuOpen={menuOpen} setMenuOpen={setMenuOpen} linkBase="/" />
+        <main className="bd bd-loading">Načítám box…</main>
+        <Footer />
+      </div>
+    )
+  }
+
+  if (!box) {
+    return (
+      <div className="box-detail-page">
+        <Header scrolled menuOpen={menuOpen} setMenuOpen={setMenuOpen} linkBase="/" />
+        <main className="bd bd-notfound">
+          <h1>Box nenalezen</h1>
+          <p>Box „{id}" v nabídce neexistuje.</p>
+          <a href="/" className="bd-btn primary" onClick={goHome}>Zpět na nabídku boxů</a>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
+
+  const available = box.status === 'volny'
+  const perM2 = formatCzk(Math.round(box.price / box.area))
+
+  const specs: [string, string][] = [
+    ['Celková plocha', `${box.area} m²`],
+    ['Cena', formatCzk(box.price)],
+    ['Cena za m²', `${perM2} / m²`],
+    ['Dispozice', 'Dvoupodlažní — přízemí showroom, patro administrativa'],
+    ['Vhodné pro', 'Sklad · výroba · showroom · obchod'],
+    ['Stav', STATUS_LABEL[box.status]],
+  ]
+
+  const equipment = ['Rekuperace a TČ', 'Klimatizace', 'Venkovní žaluzie', 'Zabezpečení']
+
+  return (
+    <div className="box-detail-page">
+      <Header scrolled={scrolled} menuOpen={menuOpen} setMenuOpen={setMenuOpen} linkBase="/" />
+
+      <main className="bd">
+        <nav className="bd-crumb" aria-label="Drobečková navigace">
+          <a href="/#box-map" onClick={goHome}>Nabídka boxů</a>
+          <span aria-hidden>/</span>
+          <span className="bd-crumb-current">Box {box.id}</span>
+        </nav>
+
+        <div className="bd-grid">
+          {/* Media — aerial with this box highlighted */}
+          <div className="bd-media">
+            <div className="bd-map">
+              <img src={BOX_MAP_IMAGE.src} alt={`Poloha boxu ${box.id} v areálu`} draggable={false} />
+              <svg
+                viewBox={`0 0 ${BOX_MAP_IMAGE.width} ${BOX_MAP_IMAGE.height}`}
+                preserveAspectRatio="xMidYMid meet"
+                className="bd-map-svg"
+                aria-hidden
+              >
+                {BOX_POLYGONS.map((p) => (
+                  <polygon
+                    key={p.id}
+                    points={p.points}
+                    className={`bd-poly${p.id === box.id ? ' active' : ''}`}
+                  />
+                ))}
+              </svg>
+            </div>
+          </div>
+
+          {/* Info panel */}
+          <aside className="bd-panel">
+            <div className="bd-eyebrow">Park24 · obchodně skladovací box</div>
+            <div className="bd-title-row">
+              <h1>Box {box.id}</h1>
+              <span className={`bd-status bd-status-${box.status}`}>
+                {available && <span className="dot" />}
+                {STATUS_LABEL[box.status]}
+              </span>
+            </div>
+            <div className="bd-price">{formatCzk(box.price)}</div>
+            <div className="bd-subprice">{box.area} m² · {perM2} / m²</div>
+
+            <dl className="bd-specs">
+              {specs.map(([k, v]) => (
+                <div className="bd-spec" key={k}>
+                  <dt>{k}</dt>
+                  <dd>{v}</dd>
+                </div>
+              ))}
+            </dl>
+
+            <div className="bd-actions">
+              <button
+                type="button"
+                className="bd-btn primary"
+                disabled={!available}
+                onClick={() => setReserving(true)}
+              >
+                {available ? 'Rezervovat box' : `Box ${STATUS_LABEL[box.status].toLowerCase()}`}
+                {available && (
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12" />
+                    <polyline points="14 5 21 12 14 19" />
+                  </svg>
+                )}
+              </button>
+              <button type="button" className="bd-btn ghost" onClick={() => generateBoxPdf(box)}>
+                <PdfIcon />
+                Stáhnout kartu (PDF)
+              </button>
+            </div>
+
+            <a href="/#box-map" className="bd-back" onClick={goHome}>← Zpět na nabídku boxů</a>
+          </aside>
+
+          {/* Text sections — under the photo, left column */}
+          <section className="bd-info">
+            <div className="bd-info-col">
+              <h2>O boxu</h2>
+              <p>
+                Novostavba obchodně skladovacích boxů Rohlenka nabízí skvělé zázemí pro Váš business.
+                Box je dvoupodlažní v přední části — přízemí lze využít jako showroom pro prezentaci
+                produktů a poschodí jako administrativní zázemí.
+              </p>
+            </div>
+            <div className="bd-info-col">
+              <h2>Výbava</h2>
+              <ul className="bd-equip">
+                {equipment.map((e) => (
+                  <li key={e}>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    {e}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <Footer />
+
+      {reserving && <InquiryModal box={box} onClose={() => setReserving(false)} />}
+    </div>
   )
 }
