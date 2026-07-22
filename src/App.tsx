@@ -202,7 +202,7 @@ function CarouselSection() {
         <div className="carousel-track">
           <div
             className="c-side-img"
-            style={{ '--bg': 'url(/assets/carousel-side.jpg)' } as React.CSSProperties}
+            style={{ '--bg': 'url(/assets/gallery/g1.jpg)' } as React.CSSProperties}
           />
           <div className="c-card-lite">
             <svg className="glass-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -218,7 +218,7 @@ function CarouselSection() {
           </div>
           <div
             className="c-main-img"
-            style={{ '--bg': 'url(/assets/carousel-main.png)' } as React.CSSProperties}
+            style={{ '--bg': 'url(/assets/gallery/g5.jpg)' } as React.CSSProperties}
           />
           <div className="c-card-dark">
             <h3>Celkem je na výběr {BOX_POLYGONS.length} boxů</h3>
@@ -226,15 +226,15 @@ function CarouselSection() {
           </div>
           <div
             className="c-wide-img"
-            style={{ '--bg': 'url(/assets/carousel-dd.png)' } as React.CSSProperties}
+            style={{ '--bg': 'url(/assets/gallery/g4.jpg)' } as React.CSSProperties}
           />
           <div
             className="c-side-img"
-            style={{ '--bg': 'url(/assets/carousel-parking.png)' } as React.CSSProperties}
+            style={{ '--bg': 'url(/assets/gallery/g6.jpg)' } as React.CSSProperties}
           />
           <div
             className="c-tall-img"
-            style={{ '--bg': 'url(/assets/carousel-dvcak.png)' } as React.CSSProperties}
+            style={{ '--bg': 'url(/assets/gallery/g2.jpg)' } as React.CSSProperties}
           />
         </div>
       </div>
@@ -572,8 +572,98 @@ function BoxMap() {
 /*  Gallery                                                                    */
 /* ────────────────────────────────────────────────────────────────────────── */
 
+const GALLERY_IMAGES = [
+  { src: '/assets/gallery/g1.jpg', alt: 'Areál Park24 — vstup Technology Park' },
+  { src: '/assets/gallery/g3.jpg', alt: 'Řada boxů Park24 za soumraku' },
+  { src: '/assets/gallery/g2.jpg', alt: 'Osvětlené boxy Park24 večer' },
+  { src: '/assets/gallery/g4.jpg', alt: 'Vjezd a parkování u boxů' },
+  { src: '/assets/gallery/g5.jpg', alt: 'Reprezentativní kancelář v boxu' },
+  { src: '/assets/gallery/g6.jpg', alt: 'Skladová a výrobní část boxu' },
+]
+
 function Gallery() {
-  return <div className="gallery" id="gallery" aria-label="Galerie boxů" />
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <section className="gallery" id="gallery" aria-label="Galerie">
+        <div className="gallery-overlay">
+          <button className="gallery-btn" onClick={() => setOpen(true)}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1" />
+              <rect x="14" y="3" width="7" height="7" rx="1" />
+              <rect x="3" y="14" width="7" height="7" rx="1" />
+              <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
+            Zobrazit galerii
+          </button>
+        </div>
+      </section>
+      {open && <GalleryModal images={GALLERY_IMAGES} onClose={() => setOpen(false)} />}
+    </>
+  )
+}
+
+function GalleryModal({ images, onClose }: { images: { src: string; alt: string }[]; onClose: () => void }) {
+  const [idx, setIdx] = useState(0)
+  const prev = () => setIdx((i) => (i - 1 + images.length) % images.length)
+  const next = () => setIdx((i) => (i + 1) % images.length)
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      else if (e.key === 'ArrowLeft') prev()
+      else if (e.key === 'ArrowRight') next()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [images.length, onClose])
+
+  return (
+    <div className="lightbox" role="dialog" aria-modal onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <button className="lb-close" onClick={onClose} aria-label="Zavřít galerii">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="6" y1="6" x2="18" y2="18" />
+          <line x1="18" y1="6" x2="6" y2="18" />
+        </svg>
+      </button>
+
+      <button className="lb-nav lb-prev" onClick={prev} aria-label="Předchozí fotka">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+      </button>
+
+      <figure className="lb-stage" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+        <img src={images[idx].src} alt={images[idx].alt} />
+        <figcaption>
+          <span className="lb-count">{idx + 1} / {images.length}</span>
+          {images[idx].alt}
+        </figcaption>
+      </figure>
+
+      <button className="lb-nav lb-next" onClick={next} aria-label="Další fotka">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </button>
+
+      <div className="lb-thumbs">
+        {images.map((im, i) => (
+          <button
+            key={im.src}
+            className={`lb-thumb${i === idx ? ' active' : ''}`}
+            style={{ backgroundImage: `url(${im.src})` }}
+            onClick={() => setIdx(i)}
+            aria-label={`Zobrazit fotku ${i + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  )
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
