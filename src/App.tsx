@@ -145,15 +145,15 @@ function Hero() {
         <div className="glass-card">
           <img className="glass-icon" src="/assets/grid-02.svg" alt="" aria-hidden />
           <div>
-            <div className="glass-num">305m²</div>
-            <div className="glass-label">Skladová plocha</div>
+            <div className="glass-num">297–305 m²</div>
+            <div className="glass-label">Užitná plocha</div>
           </div>
         </div>
         <div className="glass-card">
           <img className="glass-icon" src="/assets/car-01.svg" alt="" aria-hidden />
           <div>
-            <div className="glass-num">16x</div>
-            <div className="glass-label">Parkovací stání</div>
+            <div className="glass-num">4x</div>
+            <div className="glass-label">Pro každý box</div>
           </div>
         </div>
         <a className="glass-card dark" href="#box-map">
@@ -177,7 +177,7 @@ function Intro() {
     <section className="intro" id="about">
       <div className="eyebrow">O Boxech Park24</div>
       <h2>
-        Novostavba <b>obchodně skladovacích boxů</b> Rohlenka nabízí skvělé zázemí <b>pro Váš business.</b>
+        <b>Moderní business boxy</b> v Lelekovicích u Brna — 17 jednotek se zázemím, kanceláří, skladem a <b>vlastním parkováním.</b>
       </h2>
     </section>
   )
@@ -212,8 +212,8 @@ function CarouselSection() {
               <path d="M21 16v3a2 2 0 0 1-2 2h-3" />
             </svg>
             <div>
-              <div className="glass-num">305m²</div>
-              <div className="glass-label">Skladová plocha</div>
+              <div className="glass-num">297–305 m²</div>
+              <div className="glass-label">Užitná plocha</div>
             </div>
           </div>
           <div
@@ -261,7 +261,12 @@ function CarouselSection() {
 
 function Features() {
   const [slideIdx, setSlideIdx] = useState(0)
-  const slides = ['1. patro', '2. patro', 'Pohled shora', 'Řez']
+  const slides = [
+    { label: '1. NP', src: '/assets/plan-1np.png' },
+    { label: '2. NP', src: '/assets/plan-2np.png' },
+    { label: 'Čelní pohled', src: '/assets/plan-front.png' },
+    { label: 'Řez', src: '/assets/plan-bok.png' },
+  ]
 
   useEffect(() => {
     const t = setInterval(() => setSlideIdx((i) => (i + 1) % slides.length), 4500)
@@ -281,10 +286,10 @@ function Features() {
           </h2>
         </div>
         <p>
-          Novostavba obchodně skladovacích boxů Rohlenka nabízí skvělé zázemí pro Váš business.
-          Poskytne pohodlí jak menším, tak středním firmám. Box je dvoupodlažní v přední části,
-          kde se nabízí přízemí využít jako showroom na prezentaci produktů a poschodí jako
-          administrativní zázemí.
+          Projekt 17 moderních business boxů v Lelekovicích u Brna nabízí skvělé zázemí pro Váš
+          business. Každá jednotka je dvoupodlažní — v přízemí sklad či výroba s vlastním
+          showroomem a v patře reprezentativní kancelář a administrativní zázemí. Ke každému
+          boxu patří vlastní parkování a stavba v pasivním standardu.
         </p>
       </div>
 
@@ -305,7 +310,8 @@ function Features() {
           >
             {slides.map((s, i) => (
               <div className="blueprint-slide" key={i}>
-                <img src="/assets/pudorys.png" alt={`Půdorys boxu — ${s}`} />
+                <span className="blueprint-caption">{s.label}</span>
+                <img src={s.src} alt={`Půdorys boxu — ${s.label}`} />
               </div>
             ))}
           </div>
@@ -332,10 +338,10 @@ function Features() {
 
       <div className="feature-pills">
         {[
-          ['Rekuperace a TČ', <FpIcon1 key="i1" />],
+          ['Energetická třída A', <FpIcon1 key="i1" />],
           ['Klimatizace', <FpIcon2 key="i2" />],
-          ['Venkovní žaluzie', <FpIcon3 key="i3" />],
-          ['Zabezpečení', <FpIcon4 key="i4" />],
+          ['Příprava na venkovní žaluzie', <FpIcon3 key="i3" />],
+          ['Denní světlo ve skladu ze světlíku', <FpIcon4 key="i4" />],
         ].map(([label, icon], i) => (
           <div className="pill" key={i}>
             <div className="pill-icon">{icon}</div>
@@ -368,8 +374,8 @@ const FpIcon3 = () => (
 )
 const FpIcon4 = () => (
   <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M24 6l16 6v10c0 10-7 18-16 22-9-4-16-12-16-22V12l16-6z" />
-    <path d="M17 24l5 5 9-10" />
+    <circle cx="24" cy="24" r="8" />
+    <path d="M24 4v5M24 39v5M4 24h5M39 24h5M10.5 10.5l3.5 3.5M33.9 33.9l3.6 3.6M37.5 10.5l-3.6 3.6M14.1 33.9l-3.6 3.6" />
   </svg>
 )
 
@@ -573,12 +579,16 @@ function BoxMap() {
 /* ────────────────────────────────────────────────────────────────────────── */
 
 const GALLERY_IMAGES = [
-  { src: '/assets/gallery/g1.jpg', alt: 'Areál Park24 — vstup Technology Park' },
-  { src: '/assets/gallery/g3.jpg', alt: 'Řada boxů Park24 za soumraku' },
-  { src: '/assets/gallery/g2.jpg', alt: 'Osvětlené boxy Park24 večer' },
-  { src: '/assets/gallery/g4.jpg', alt: 'Vjezd a parkování u boxů' },
-  { src: '/assets/gallery/g5.jpg', alt: 'Reprezentativní kancelář v boxu' },
-  { src: '/assets/gallery/g6.jpg', alt: 'Skladová a výrobní část boxu' },
+  { src: '/assets/gallery/g9.jpg', alt: 'Kancelářské zázemí s jednacím stolem' },
+  { src: '/assets/gallery/g3.jpg', alt: 'Letecký pohled na areál Park24 v Lelekovicích' },
+  { src: '/assets/gallery/g1.jpg', alt: 'Areál business boxů Park24 za soumraku' },
+  { src: '/assets/gallery/g2.jpg', alt: 'Čelní pohled na boxy s vjezdovými vraty' },
+  { src: '/assets/gallery/g4.jpg', alt: 'Řada komerčních boxů s vlastním parkováním' },
+  { src: '/assets/gallery/g5.jpg', alt: 'Reprezentativní showroom s prosklenou stěnou' },
+  { src: '/assets/gallery/g7.jpg', alt: 'Prosvětlená kancelář v patře boxu' },
+  { src: '/assets/gallery/g6.jpg', alt: 'Skladová hala s regály a mezaninem' },
+  { src: '/assets/gallery/g8.jpg', alt: 'Skladová a expediční část boxu' },
+  { src: '/assets/gallery/g10.jpg', alt: 'Sklad s ocelovým mezaninem a schodištěm' },
 ]
 
 function Gallery() {
@@ -716,12 +726,12 @@ function InteractiveMapContact() {
 
       <div className="contact-card">
         <div>
-          <div className="eyebrow">Pomůžeme vám</div>
-          <h3>Lokalita &amp; Kontakt</h3>
-          <div className="lines">
-            <span>Esprit living s.r.o.</span>
-            <span>Šámalova 1537/60a, 615 00 Brno – Židenice</span>
-          </div>
+          <div className="eyebrow">Kde nás najdete?</div>
+          <h3>Lokalita</h3>
+          <p className="contact-lead">
+            Komerční jednotky se nachází v průmyslové zóně v obci Lelekovice na ulici
+            Chmelníky, s dobrým dopravním napojením na R43.
+          </p>
         </div>
 
         <div className="contact-icons">
@@ -734,8 +744,8 @@ function InteractiveMapContact() {
               </svg>
             </div>
             <div>
-              <div className="stat-num">2 min</div>
-              <div className="stat-sub">Dálnice D1</div>
+              <div className="stat-num">1 min</div>
+              <div className="stat-sub">R43</div>
             </div>
           </div>
           <div className="stat">
@@ -749,7 +759,23 @@ function InteractiveMapContact() {
             </div>
             <div>
               <div className="stat-num">10 min</div>
-              <div className="stat-sub">Brno</div>
+              <div className="stat-sub">centrum Brna</div>
+            </div>
+          </div>
+          <div className="stat">
+            <div className="stat-ico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="4" y="4" width="16" height="12" rx="2" />
+                <line x1="4" y1="11" x2="20" y2="11" />
+                <circle cx="8" cy="13.5" r="1" />
+                <circle cx="16" cy="13.5" r="1" />
+                <path d="M8 16l-2 3" />
+                <path d="M16 16l2 3" />
+              </svg>
+            </div>
+            <div>
+              <div className="stat-num">5 min</div>
+              <div className="stat-sub">Vlaková zastávka</div>
             </div>
           </div>
         </div>
@@ -818,11 +844,22 @@ function Footer() {
       </div>
 
       <div className="footer-address">
-        <span>Esprit living s.r.o.</span>
-        <span>Šámalova 1537/60a, 615 00 Brno – Židenice</span>
-        <span>Ing. Ondřej Menšík</span>
-        <span>Tel.: +420 737 889 777</span>
-        <span>mensik@stemfire.cz</span>
+        <div className="footer-addr-col">
+          <span className="footer-addr-label">Developer projektu</span>
+          <span>ESPRIT living s.r.o.</span>
+          <span>Ing. Ondřej Menšík</span>
+          <span>Tel.: <a href="tel:+420737889777">+420 737 889 777</a></span>
+          <span><a href="mailto:mensik@stemfire.cz">mensik@stemfire.cz</a></span>
+          <span className="footer-addr-reg">
+            Sídlo dle rejstříku: Šámalova 1537/60a, 615 00 Brno – Židenice · IČO: 18824137
+          </span>
+        </div>
+
+        <div className="footer-addr-col">
+          <span className="footer-addr-label">Doručovací adresa / klientské centrum</span>
+          <span>ESPRIT living s.r.o.</span>
+          <span>Cejl 29/76, 602 00 Brno – Židenice</span>
+        </div>
       </div>
 
       <div className="footer-meta">
@@ -1080,7 +1117,7 @@ export function BoxDetail({ id }: { id: string }) {
     ['Stav', STATUS_LABEL[box.status]],
   ]
 
-  const equipment = ['Rekuperace a TČ', 'Klimatizace', 'Venkovní žaluzie', 'Zabezpečení']
+  const equipment = ['Energetická třída A', 'Klimatizace', 'Příprava na venkovní žaluzie', 'Denní světlo ve skladu ze světlíku']
 
   return (
     <div className="box-detail-page">
@@ -1166,9 +1203,9 @@ export function BoxDetail({ id }: { id: string }) {
             <div className="bd-info-col">
               <h2>O boxu</h2>
               <p>
-                Novostavba obchodně skladovacích boxů Rohlenka nabízí skvělé zázemí pro Váš business.
-                Box je dvoupodlažní v přední části — přízemí lze využít jako showroom pro prezentaci
-                produktů a poschodí jako administrativní zázemí.
+                Moderní business box v Lelekovicích u Brna nabízí skvělé zázemí pro Váš business.
+                Jednotka je dvoupodlažní — v přízemí sklad či výroba s vlastním showroomem a v patře
+                reprezentativní kancelář a administrativní zázemí.
               </p>
             </div>
             <div className="bd-info-col">
