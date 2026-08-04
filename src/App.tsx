@@ -145,15 +145,15 @@ function Hero() {
         <div className="glass-card">
           <img className="glass-icon" src="/assets/grid-02.svg" alt="" aria-hidden />
           <div>
-            <div className="glass-num">297–305 m²</div>
+            <div className="glass-num">od 297 m²</div>
             <div className="glass-label">Užitná plocha</div>
           </div>
         </div>
         <div className="glass-card">
           <img className="glass-icon" src="/assets/car-01.svg" alt="" aria-hidden />
           <div>
-            <div className="glass-num">4x</div>
-            <div className="glass-label">Pro každý box</div>
+            <div className="glass-num glass-num-wrap">4× parkování</div>
+            <div className="glass-label">pro každý box</div>
           </div>
         </div>
         <a className="glass-card dark" href="#box-map">
@@ -212,7 +212,7 @@ function CarouselSection() {
               <path d="M21 16v3a2 2 0 0 1-2 2h-3" />
             </svg>
             <div>
-              <div className="glass-num">297–305 m²</div>
+              <div className="glass-num">od 297 m²</div>
               <div className="glass-label">Užitná plocha</div>
             </div>
           </div>
@@ -221,7 +221,13 @@ function CarouselSection() {
             style={{ '--bg': 'url(/assets/gallery/g5.jpg)' } as React.CSSProperties}
           />
           <div className="c-card-dark">
-            <h3>Celkem je na výběr {BOX_POLYGONS.length} boxů</h3>
+            <div className="c-card-dark-text">
+              <h3>Na výběr {BOX_POLYGONS.length} boxů</h3>
+              <p>
+                Jednotlivé boxy lze propojit do většího celku a přizpůsobit tak dispozici
+                přesně vašemu provozu — od jedné jednotky až po celé křídlo.
+              </p>
+            </div>
             <div className="c-avatar" aria-hidden />
           </div>
           <div
@@ -613,8 +619,8 @@ function Gallery() {
   )
 }
 
-function GalleryModal({ images, onClose }: { images: { src: string; alt: string }[]; onClose: () => void }) {
-  const [idx, setIdx] = useState(0)
+function GalleryModal({ images, onClose, start = 0 }: { images: { src: string; alt: string; render?: React.ReactNode }[]; onClose: () => void; start?: number }) {
+  const [idx, setIdx] = useState(start)
   const prev = () => setIdx((i) => (i - 1 + images.length) % images.length)
   const next = () => setIdx((i) => (i + 1) % images.length)
 
@@ -648,7 +654,7 @@ function GalleryModal({ images, onClose }: { images: { src: string; alt: string 
       </button>
 
       <figure className="lb-stage" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-        <img src={images[idx].src} alt={images[idx].alt} />
+        {images[idx].render ?? <img src={images[idx].src} alt={images[idx].alt} />}
         <figcaption>
           <span className="lb-count">{idx + 1} / {images.length}</span>
           {images[idx].alt}
@@ -1064,6 +1070,8 @@ export function BoxDetail({ id }: { id: string }) {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [reserving, setReserving] = useState(false)
+  const [mediaIdx, setMediaIdx] = useState(0)
+  const [lightbox, setLightbox] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
@@ -1119,6 +1127,48 @@ export function BoxDetail({ id }: { id: string }) {
 
   const equipment = ['Energetická třída A', 'Klimatizace', 'Příprava na venkovní žaluzie', 'Denní světlo ve skladu ze světlíku']
 
+  const media = [
+    { kind: 'plan', src: '/assets/plan-1np.png', label: '1. NP' },
+    { kind: 'plan', src: '/assets/plan-2np.png', label: '2. NP' },
+    { kind: 'aerial', src: BOX_MAP_IMAGE.src, label: 'Poloha' },
+  ]
+  const active = media[mediaIdx] ?? media[0]
+  const lightboxImages = media.map((m) =>
+    m.kind === 'aerial'
+      ? {
+          src: m.src,
+          alt: `Poloha boxu ${box.id} v areálu`,
+          render: (
+            <span className="lb-aerial">
+              <img src={BOX_MAP_IMAGE.src} alt={`Poloha boxu ${box.id} v areálu`} />
+              <svg
+                viewBox={`0 0 ${BOX_MAP_IMAGE.width} ${BOX_MAP_IMAGE.height}`}
+                preserveAspectRatio="xMidYMid meet"
+                className="lb-aerial-svg"
+                aria-hidden
+              >
+                {BOX_POLYGONS.map((p) => (
+                  <polygon
+                    key={p.id}
+                    points={p.points}
+                    className={`bd-poly${p.id === box.id ? ' active' : ''}`}
+                  />
+                ))}
+              </svg>
+            </span>
+          ),
+        }
+      : {
+          src: m.src,
+          alt: `Půdorys ${m.label} boxu ${box.id}`,
+          render: (
+            <span className="lb-plan">
+              <img src={m.src} alt={`Půdorys ${m.label} boxu ${box.id}`} />
+            </span>
+          ),
+        }
+  )
+
   return (
     <div className="box-detail-page">
       <Header scrolled={scrolled} menuOpen={menuOpen} setMenuOpen={setMenuOpen} linkBase="/" />
@@ -1133,22 +1183,63 @@ export function BoxDetail({ id }: { id: string }) {
         <div className="bd-grid">
           {/* Media — aerial with this box highlighted */}
           <div className="bd-media">
-            <div className="bd-map">
-              <img src={BOX_MAP_IMAGE.src} alt={`Poloha boxu ${box.id} v areálu`} draggable={false} />
-              <svg
-                viewBox={`0 0 ${BOX_MAP_IMAGE.width} ${BOX_MAP_IMAGE.height}`}
-                preserveAspectRatio="xMidYMid meet"
-                className="bd-map-svg"
-                aria-hidden
+            <div className="bd-gallery">
+              <button
+                type="button"
+                className="bd-gallery-main"
+                onClick={() => setLightbox(true)}
+                aria-label="Zobrazit větší galerii"
               >
-                {BOX_POLYGONS.map((p) => (
-                  <polygon
-                    key={p.id}
-                    points={p.points}
-                    className={`bd-poly${p.id === box.id ? ' active' : ''}`}
-                  />
+                {active.kind === 'aerial' ? (
+                  <div className="bd-map bd-map-fill">
+                    <img src={BOX_MAP_IMAGE.src} alt={`Poloha boxu ${box.id} v areálu`} draggable={false} />
+                    <svg
+                      viewBox={`0 0 ${BOX_MAP_IMAGE.width} ${BOX_MAP_IMAGE.height}`}
+                      preserveAspectRatio="xMidYMid meet"
+                      className="bd-map-svg"
+                      aria-hidden
+                    >
+                      {BOX_POLYGONS.map((p) => (
+                        <polygon
+                          key={p.id}
+                          points={p.points}
+                          className={`bd-poly${p.id === box.id ? ' active' : ''}`}
+                        />
+                      ))}
+                    </svg>
+                  </div>
+                ) : (
+                  <div className="bd-plan-main">
+                    <img src={active.src} alt={`Půdorys ${active.label} boxu ${box.id}`} />
+                    <span className="bd-plan-tag">{active.label}</span>
+                  </div>
+                )}
+
+                <span className="bd-zoom" aria-hidden>
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                  </svg>
+                </span>
+              </button>
+
+              <div className="bd-thumbs">
+                {media.map((m, i) => (
+                  <button
+                    key={m.label}
+                    type="button"
+                    className={`bd-thumb${i === mediaIdx ? ' active' : ''}`}
+                    onClick={() => setMediaIdx(i)}
+                    aria-label={m.label}
+                    title={m.label}
+                  >
+                    <img
+                      src={m.src}
+                      alt=""
+                      className={m.kind === 'aerial' ? 'cover' : 'contain'}
+                    />
+                  </button>
                 ))}
-              </svg>
+              </div>
             </div>
           </div>
 
@@ -1228,6 +1319,9 @@ export function BoxDetail({ id }: { id: string }) {
       <Footer />
 
       {reserving && <InquiryModal box={box} onClose={() => setReserving(false)} />}
+      {lightbox && (
+        <GalleryModal images={lightboxImages} start={mediaIdx} onClose={() => setLightbox(false)} />
+      )}
     </div>
   )
 }
