@@ -159,7 +159,7 @@
   position: absolute;
   inset: 0;
   z-index: 0;
-  background: url('/assets/hero-6.jpg') center center / cover no-repeat;
+  background: url('/assets/hero.jpg') center center / cover no-repeat;
 }
 .hero-bg::after {
   content: '';
@@ -2520,6 +2520,7 @@ textarea.field-input {
   grid-template-columns: minmax(0, 1.3fr) minmax(320px, 1fr);
   grid-template-areas:
     "media panel"
+    "rooms panel"
     "info  panel";
   column-gap: clamp(24px, 3.5vw, 56px);
   row-gap: clamp(24px, 3vw, 40px);
@@ -2533,6 +2534,89 @@ textarea.field-input {
 }
 .bd-info {
   grid-area: info;
+}
+.bd-rooms {
+  grid-area: rooms;
+}
+.bd-rooms-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: clamp(12px, 1.5vw, 18px);
+}
+.bd-rooms-head h2 {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(18px, 1.8vw, 24px);
+  color: var(--navy);
+  margin: 0;
+}
+.bd-rooms-tabs {
+  display: inline-flex;
+  padding: 4px;
+  gap: 4px;
+  background: rgba(31, 43, 94, 0.06);
+  border-radius: 999px;
+}
+.bd-rooms-tabs button {
+  padding: 7px 20px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(31, 43, 94, 0.6);
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.bd-rooms-tabs button.active {
+  background: var(--navy);
+  color: #fff;
+}
+.bd-room-table {
+  border: 1px solid rgba(31, 43, 94, 0.12);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.bd-room-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--body);
+  font-size: clamp(12px, 1vw, 14px);
+  color: var(--navy);
+}
+.bd-room-table th,
+.bd-room-table td {
+  padding: 9px 14px;
+  text-align: left;
+  border-bottom: 1px solid rgba(31, 43, 94, 0.08);
+}
+.bd-room-table thead th {
+  font-weight: 600;
+  color: rgba(31, 43, 94, 0.6);
+  background: rgba(31, 43, 94, 0.03);
+}
+.bd-room-table td.code {
+  font-variant-numeric: tabular-nums;
+  color: rgba(31, 43, 94, 0.6);
+  white-space: nowrap;
+}
+.bd-room-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bd-room-table tfoot td {
+  font-weight: 700;
+  border-bottom: none;
+  background: rgba(31, 43, 94, 0.04);
+}
+@media (max-width: 768px) {
+  .bd-rooms-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Media — aerial with the box highlighted */
@@ -2907,6 +2991,7 @@ textarea.field-input {
     grid-template-areas:
       "media"
       "panel"
+      "rooms"
       "info";
   }
   .bd-panel {

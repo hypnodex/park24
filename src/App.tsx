@@ -3,6 +3,7 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import './App.css'
 import { STATUS_LABEL, formatCzk, submitInquiry, useBoxes, type Box } from './store'
 import { BOX_MAP_IMAGE, BOX_POLYGONS } from './boxMapPolygons'
+import { boxRooms, boxPlans, type Room } from './boxRooms'
 import { navigate } from './router'
 import { generateBoxPdf } from './boxPdf'
 
@@ -1065,6 +1066,45 @@ function Field({
 /*  Box detail page — /box/:id                                                 */
 /* ────────────────────────────────────────────────────────────────────────── */
 
+const fmtArea = (n: number) => n.toLocaleString('cs-CZ', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+
+function RoomLegend({ rows }: { rows: Room[] }) {
+  const complete = rows.every((r) => r.area != null)
+  const total = rows.reduce((s, r) => s + (r.area ?? 0), 0)
+  return (
+    <div className="bd-room-table">
+      <table>
+        <thead>
+          <tr>
+            <th>č.</th>
+            <th>Místnost</th>
+            <th className="num">s.v. [m]</th>
+            <th className="num">Plocha [m²]</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.code}>
+              <td className="code">{r.code}</td>
+              <td>{r.name}</td>
+              <td className="num">{r.sv}</td>
+              <td className="num">{r.area != null ? fmtArea(r.area) : '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+        {complete && (
+          <tfoot>
+            <tr>
+              <td colSpan={3}>Celkem</td>
+              <td className="num">{fmtArea(total)}</td>
+            </tr>
+          </tfoot>
+        )}
+      </table>
+    </div>
+  )
+}
+
 export function BoxDetail({ id }: { id: string }) {
   const { boxes, loading } = useBoxes()
   const [scrolled, setScrolled] = useState(false)
@@ -1072,6 +1112,7 @@ export function BoxDetail({ id }: { id: string }) {
   const [reserving, setReserving] = useState(false)
   const [mediaIdx, setMediaIdx] = useState(0)
   const [lightbox, setLightbox] = useState(false)
+  const [floorTab, setFloorTab] = useState<'np1' | 'np2'>('np1')
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
@@ -1127,9 +1168,11 @@ export function BoxDetail({ id }: { id: string }) {
 
   const equipment = ['Energetická třída A', 'Klimatizace', 'Příprava na venkovní žaluzie', 'Denní světlo ve skladu ze světlíku']
 
+  const plans = boxPlans(box.id)
+  const rooms = boxRooms(box.id)
   const media = [
-    { kind: 'plan', src: '/assets/plan-1np.png', label: '1. NP' },
-    { kind: 'plan', src: '/assets/plan-2np.png', label: '2. NP' },
+    { kind: 'plan', src: plans.np1, label: '1. NP' },
+    { kind: 'plan', src: plans.np2, label: '2. NP' },
     { kind: 'aerial', src: BOX_MAP_IMAGE.src, label: 'Poloha' },
   ]
   const active = media[mediaIdx] ?? media[0]
@@ -1242,6 +1285,35 @@ export function BoxDetail({ id }: { id: string }) {
               </div>
             </div>
           </div>
+
+          {rooms && (
+            <section className="bd-rooms">
+              <div className="bd-rooms-head">
+                <h2>Legenda místností</h2>
+                <div className="bd-rooms-tabs" role="tablist">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={floorTab === 'np1'}
+                    className={floorTab === 'np1' ? 'active' : ''}
+                    onClick={() => setFloorTab('np1')}
+                  >
+                    1. NP
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={floorTab === 'np2'}
+                    className={floorTab === 'np2' ? 'active' : ''}
+                    onClick={() => setFloorTab('np2')}
+                  >
+                    2. NP
+                  </button>
+                </div>
+              </div>
+              <RoomLegend rows={floorTab === 'np1' ? rooms.np1 : rooms.np2} />
+            </section>
+          )}
 
           {/* Info panel */}
           <aside className="bd-panel">
