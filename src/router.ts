@@ -11,7 +11,8 @@ export function navigate(to: string) {
   if (to === window.location.pathname + window.location.hash) return
   window.history.pushState({}, '', to)
   window.dispatchEvent(new PopStateEvent('popstate'))
-  window.scrollTo(0, 0)
+  // instant (not smooth) — scroll-behavior:smooth would otherwise animate the jump
+  window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior })
 }
 
 /** Reactive current pathname. */

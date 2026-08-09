@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import './App.css'
 import { STATUS_LABEL, formatCzk, submitInquiry, useBoxes, type Box } from './store'
@@ -190,6 +190,7 @@ function Intro() {
 
 function CarouselSection() {
   const trackRef = useRef<HTMLDivElement>(null)
+  const [lbAt, setLbAt] = useState<number | null>(null)
 
   const slide = (dir: 1 | -1) => {
     if (!trackRef.current) return
@@ -197,14 +198,25 @@ function CarouselSection() {
     trackRef.current.scrollBy({ left: dir * w * 0.6, behavior: 'smooth' })
   }
 
+  const openAt = (src: string) => {
+    const i = GALLERY_IMAGES.findIndex((g) => g.src === src)
+    setLbAt(i >= 0 ? i : 0)
+  }
+  const cImg = (cls: string, src: string) => (
+    <button
+      type="button"
+      className={`${cls} c-img-btn`}
+      style={{ '--bg': `url(${src})` } as React.CSSProperties}
+      onClick={() => openAt(src)}
+      aria-label="Zvětšit fotku"
+    />
+  )
+
   return (
     <section className="carousel-section" id="carousel">
       <div className="carousel" ref={trackRef}>
         <div className="carousel-track">
-          <div
-            className="c-side-img"
-            style={{ '--bg': 'url(/assets/gallery/g1.jpg)' } as React.CSSProperties}
-          />
+          {cImg('c-side-img', '/assets/gallery/g1.jpg')}
           <div className="c-card-lite">
             <svg className="glass-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 8V5a2 2 0 0 1 2-2h3" />
@@ -217,10 +229,7 @@ function CarouselSection() {
               <div className="glass-label">Užitná plocha</div>
             </div>
           </div>
-          <div
-            className="c-main-img"
-            style={{ '--bg': 'url(/assets/gallery/g5.jpg)' } as React.CSSProperties}
-          />
+          {cImg('c-main-img', '/assets/gallery/g5.jpg')}
           <div className="c-card-dark">
             <div className="c-card-dark-text">
               <h3>Na výběr {BOX_POLYGONS.length} boxů</h3>
@@ -231,18 +240,9 @@ function CarouselSection() {
             </div>
             <div className="c-avatar" aria-hidden />
           </div>
-          <div
-            className="c-wide-img"
-            style={{ '--bg': 'url(/assets/gallery/g4.jpg)' } as React.CSSProperties}
-          />
-          <div
-            className="c-side-img"
-            style={{ '--bg': 'url(/assets/gallery/g6.jpg)' } as React.CSSProperties}
-          />
-          <div
-            className="c-tall-img"
-            style={{ '--bg': 'url(/assets/gallery/g2.jpg)' } as React.CSSProperties}
-          />
+          {cImg('c-wide-img', '/assets/gallery/g4.jpg')}
+          {cImg('c-side-img', '/assets/gallery/g6.jpg')}
+          {cImg('c-tall-img', '/assets/gallery/g2.jpg')}
         </div>
       </div>
 
@@ -258,6 +258,10 @@ function CarouselSection() {
           </svg>
         </button>
       </div>
+
+      {lbAt !== null && (
+        <GalleryModal images={GALLERY_IMAGES} start={lbAt} onClose={() => setLbAt(null)} />
+      )}
     </section>
   )
 }
@@ -648,25 +652,25 @@ function GalleryModal({ images, onClose, start = 0 }: { images: { src: string; a
         </svg>
       </button>
 
-      <button className="lb-nav lb-prev" onClick={prev} aria-label="Předchozí fotka">
-        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-      </button>
+      <div className="lb-viewer">
+        <button className="lb-nav lb-prev" onClick={prev} aria-label="Předchozí fotka">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
 
-      <figure className="lb-stage" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-        {images[idx].render ?? <img src={images[idx].src} alt={images[idx].alt} />}
-        <figcaption>
-          <span className="lb-count">{idx + 1} / {images.length}</span>
-          {images[idx].alt}
-        </figcaption>
-      </figure>
+        <figure className="lb-stage" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+          {images[idx].render ?? <img src={images[idx].src} alt={images[idx].alt} />}
+        </figure>
 
-      <button className="lb-nav lb-next" onClick={next} aria-label="Další fotka">
-        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-      </button>
+        <button className="lb-nav lb-next" onClick={next} aria-label="Další fotka">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="lb-desc">{images[idx].alt}</div>
 
       <div className="lb-thumbs">
         {images.map((im, i) => (
@@ -678,6 +682,10 @@ function GalleryModal({ images, onClose, start = 0 }: { images: { src: string; a
             aria-label={`Zobrazit fotku ${i + 1}`}
           />
         ))}
+      </div>
+
+      <div className="lb-countbar">
+        <span className="lb-count">{idx + 1} / {images.length}</span>
       </div>
     </div>
   )
@@ -1126,6 +1134,13 @@ export function BoxDetail({ id }: { id: string }) {
   useEffect(() => {
     document.title = `Box ${id} — Park24`
     return () => { document.title = 'Park24' }
+  }, [id])
+
+  // Always open the box page at the top, before paint and without smooth
+  // animation (scroll-behavior:smooth would otherwise animate the jump).
+  useLayoutEffect(() => {
+    if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual'
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior })
   }, [id])
 
   const goHome = (e: React.MouseEvent) => { e.preventDefault(); navigate('/') }
