@@ -1416,10 +1416,12 @@ export function BoxDetail({ id }: { id: string }) {
           <section className="bd-info">
             <div className="bd-info-col">
               <h2>O boxu</h2>
+              <p>Moderní prostor pro vaše podnikání v Lelekovicích u Brna.</p>
               <p>
-                Moderní business box v Lelekovicích u Brna nabízí skvělé zázemí pro Váš business.
-                Jednotka je dvoupodlažní — v přízemí sklad či výroba s vlastním showroomem a v patře
-                reprezentativní kancelář a administrativní zázemí.
+                Dvoupodlažní jednotka chytře kombinuje praktické zázemí v přízemí a reprezentativní
+                prostory v patře. Dole získáte variabilní sklad či výrobu s vlastním showroomem,
+                nahoře pak světlou kancelář a komfortní administrativní zázemí pro váš tým i schůzky
+                s klienty.
               </p>
             </div>
             <div className="bd-info-col">
