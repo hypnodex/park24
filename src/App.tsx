@@ -300,7 +300,8 @@ function Features() {
           Projekt 17 moderních business boxů v Lelekovicích u Brna nabízí skvělé zázemí pro Váš
           business. Každá jednotka je dvoupodlažní — v přízemí sklad či výroba s vlastním
           showroomem a v patře reprezentativní kancelář a administrativní zázemí. Ke každému
-          boxu patří vlastní parkování a stavba v pasivním standardu.
+          boxu patří vlastní parkovací stání a celá hala je postavena v pasivním energetickém
+          standardu.
         </p>
       </div>
 
@@ -361,6 +362,41 @@ function Features() {
         ))}
       </div>
     </section>
+  )
+}
+
+/** Download panel for the box-standards PDF (used on box detail pages). */
+function StandardsDownload() {
+  return (
+    <a
+      className="std-download"
+      href="/assets/Park24-standardy-boxu.pdf"
+      download
+      target="_blank"
+      rel="noopener"
+    >
+      <div className="std-download-icon">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="12" y1="18" x2="12" y2="12" />
+          <polyline points="9 15 12 18 15 15" />
+        </svg>
+      </div>
+      <div className="std-download-text">
+        <div className="std-download-title">Standardy boxu ke stažení</div>
+        <div className="std-download-sub">
+          Co všechno je v ceně a z čeho je hala postavena — kompletní přehled v PDF.
+        </div>
+      </div>
+      <span className="std-download-cta">
+        Stáhnout PDF
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <polyline points="14 5 21 12 14 19" />
+        </svg>
+      </span>
+    </a>
   )
 }
 
@@ -1399,6 +1435,7 @@ export function BoxDetail({ id }: { id: string }) {
                 ))}
               </ul>
             </div>
+            <StandardsDownload />
           </section>
         </div>
       </main>

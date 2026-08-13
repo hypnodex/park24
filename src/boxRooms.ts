@@ -77,11 +77,16 @@ export function boxTotalArea(id: string): number | null {
   return Math.round(all.reduce((s, x) => s + (x.area ?? 0), 0) * 10) / 10
 }
 
-// Odd boxes use the "lichy" drawings, even boxes the mirrored "-1" drawings.
+// Odd boxes use the "lichy" drawings, even boxes the mirrored "sudy" drawings.
+// 1.NP plans include the parking layout from the site plan: 4 spaces by default,
+// except P13/B1 (5 spaces) and P14/B2 (3 spaces), which have dedicated drawings.
 export function boxPlans(id: string): { np1: string; np2: string } {
   const n = parseInt(id.replace(/\D/g, ''), 10)
   const even = n % 2 === 0
-  return even
-    ? { np1: '/assets/plan-1np-even.png', np2: '/assets/plan-2np-even.png' }
-    : { np1: '/assets/plan-1np-odd.png', np2: '/assets/plan-2np-odd.png' }
+  const np2 = even ? '/assets/plan-2np-even.png' : '/assets/plan-2np-odd.png'
+  let np1: string
+  if (id === 'P13') np1 = '/assets/plan-1np-b1.png'
+  else if (id === 'P14') np1 = '/assets/plan-1np-b2.png'
+  else np1 = even ? '/assets/plan-1np-even.png' : '/assets/plan-1np-odd.png'
+  return { np1, np2 }
 }
