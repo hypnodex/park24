@@ -1,6 +1,6 @@
 import { BOX_MAP_IMAGE, BOX_POLYGONS } from './boxMapPolygons'
 import { STATUS_LABEL, formatCzk, type Box } from './store'
-import { boxRooms, boxPlans, type Room } from './boxRooms'
+import { boxRooms, boxPlans, boxTotalArea, boxComputedPrice, boxParking, type Room } from './boxRooms'
 
 /**
  * Generates a one-page A4 PDF "box card" and triggers a download.
@@ -84,12 +84,14 @@ function drawBase(ctx: CanvasRenderingContext2D, box: Box) {
   ctx.fillStyle = '#ffffff'
   ctx.fillText(label, px + 22, 165)
 
-  // specs sublines
-  const perM2 = formatCzk(Math.round(box.price / box.area))
+  // specs sublines — real summed area + computed price (parking incl.)
+  const area = boxTotalArea(box.id) ?? box.area
+  const price = boxComputedPrice(box.id) ?? box.price
+  const areaStr = area.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })
   ctx.textAlign = 'left'
   ctx.fillStyle = INK
   ctx.font = '600 24px system-ui, sans-serif'
-  ctx.fillText(`${box.area} m²  ·  ${formatCzk(box.price)}  ·  ${perM2}/m²`, M, 214)
+  ctx.fillText(`${areaStr} m²  ·  ${formatCzk(price)}  ·  ${boxParking(box.id)}× parkování`, M, 214)
   ctx.fillStyle = MUTED
   ctx.font = '500 20px system-ui, sans-serif'
   ctx.fillText('Dvoupodlažní · showroom + administrativa · Energetická třída A · klimatizace', M, 244)

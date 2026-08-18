@@ -3,7 +3,7 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import './App.css'
 import { STATUS_LABEL, formatCzk, submitInquiry, useBoxes, type Box } from './store'
 import { BOX_MAP_IMAGE, BOX_POLYGONS } from './boxMapPolygons'
-import { boxRooms, boxPlans, type Room } from './boxRooms'
+import { boxRooms, boxPlans, boxTotalArea, boxComputedPrice, boxParking, type Room } from './boxRooms'
 import { navigate } from './router'
 import { generateBoxPdf } from './boxPdf'
 
@@ -51,6 +51,16 @@ export default function App() {
 function openBox(id: string) {
   navigate(`/box/${encodeURIComponent(id)}`)
 }
+
+/** Public display area/price — real summed area + computed price (parking incl.),
+ *  falling back to the stored values if room data is unavailable. */
+function displayArea(b: Box): number {
+  return boxTotalArea(b.id) ?? b.area
+}
+function displayPrice(b: Box): number {
+  return boxComputedPrice(b.id) ?? b.price
+}
+const fmtM2 = (n: number) => n.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /*  Header (fixed, with menu)                                                  */
@@ -296,13 +306,16 @@ function Features() {
             <br />a výbavě záleží
           </h2>
         </div>
-        <p>
-          Projekt 17 moderních business boxů v Lelekovicích u Brna nabízí skvělé zázemí pro Váš
-          business. Každá jednotka je dvoupodlažní — v přízemí sklad či výroba s vlastním
-          showroomem a v patře reprezentativní kancelář a administrativní zázemí. Ke každému
-          boxu patří vlastní parkovací stání a celá hala je postavena v pasivním energetickém
-          standardu.
-        </p>
+        <div className="features-head-right">
+          <p>
+            Projekt 17 moderních business boxů v Lelekovicích u Brna nabízí skvělé zázemí pro Váš
+            business. Každá jednotka je dvoupodlažní — v přízemí sklad či výroba s vlastním
+            showroomem a v patře reprezentativní kancelář a administrativní zázemí. Ke každému
+            boxu patří vlastní parkovací stání a celá hala je postavena v pasivním energetickém
+            standardu.
+          </p>
+          <StandardsDownload />
+        </div>
       </div>
 
       <div className="features-slider">
@@ -443,7 +456,6 @@ function BoxList({ boxes }: { boxes: Box[] }) {
   return (
     <ul className="bs-list">
       {boxes.map((b) => {
-        const perM2 = formatCzk(Math.round(b.price / b.area))
         return (
           <li
             key={b.id}
@@ -460,9 +472,8 @@ function BoxList({ boxes }: { boxes: Box[] }) {
             }}
           >
             <span className="bs-row-id">{b.id}</span>
-            <span className="bs-row-area">{b.area} m²</span>
-            <span className="bs-row-price">{formatCzk(b.price)}</span>
-            <span className="bs-row-perm2">{perM2}/m²</span>
+            <span className="bs-row-area">{fmtM2(displayArea(b))} m²</span>
+            <span className="bs-row-price">{formatCzk(displayPrice(b))}</span>
             <span className={`bs-status bs-status-${b.status}`}>
               {b.status === 'volny' && <span className="dot" />}
               {STATUS_LABEL[b.status]}
@@ -569,7 +580,7 @@ function BoxMap() {
               const box = byId.get(poly.id)
               const status = box?.status ?? 'volny'
               const tooltip = box
-                ? `Box ${poly.id} – ${STATUS_LABEL[status]} · ${box.area} m² · ${formatCzk(box.price)}`
+                ? `Box ${poly.id} – ${STATUS_LABEL[status]} · ${fmtM2(displayArea(box))} m² · ${formatCzk(displayPrice(box))}`
                 : `Box ${poly.id}`
               const anchor = polygonTopCenter(poly.points)
               return (
@@ -999,7 +1010,7 @@ function InquiryModal({ box, onClose }: { box: Box; onClose: () => void }) {
             <div className="modal-eyebrow">Poptávka boxu</div>
             <h3>{box.id}</h3>
             <p className="inquiry-meta">
-              {box.area} m² · {formatCzk(box.price)}
+              {fmtM2(displayArea(box))} m² · {formatCzk(displayPrice(box))}
             </p>
 
             <form className="inquiry-form" onSubmit={handleSubmit} noValidate>
@@ -1206,12 +1217,12 @@ export function BoxDetail({ id }: { id: string }) {
   }
 
   const available = box.status === 'volny'
-  const perM2 = formatCzk(Math.round(box.price / box.area))
+  const area = displayArea(box)
+  const price = displayPrice(box)
 
   const specs: [string, string][] = [
-    ['Celková plocha', `${box.area} m²`],
-    ['Cena', formatCzk(box.price)],
-    ['Cena za m²', `${perM2} / m²`],
+    ['Celková plocha', `${fmtM2(area)} m²`],
+    ['Cena', formatCzk(price)],
     ['Dispozice', 'Dvoupodlažní — přízemí showroom, patro administrativa'],
     ['Vhodné pro', 'Sklad · výroba · showroom · obchod'],
     ['Stav', STATUS_LABEL[box.status]],
@@ -1376,8 +1387,8 @@ export function BoxDetail({ id }: { id: string }) {
                 {STATUS_LABEL[box.status]}
               </span>
             </div>
-            <div className="bd-price">{formatCzk(box.price)}</div>
-            <div className="bd-subprice">{box.area} m² · {perM2} / m²</div>
+            <div className="bd-price">{formatCzk(price)}</div>
+            <div className="bd-subprice">{fmtM2(area)} m² · {boxParking(box.id)}× parkování</div>
 
             <dl className="bd-specs">
               {specs.map(([k, v]) => (

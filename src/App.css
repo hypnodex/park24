@@ -499,6 +499,11 @@
   gap: clamp(24px, 5vw, 84px);
   align-items: start;
 }
+.features-head-right {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(20px, 2.4vw, 30px);
+}
 .features-head h2 {
   margin: 0;
   font-family: var(--display);
@@ -2008,7 +2013,7 @@ textarea.field-input {
 .bs-row {
   position: relative;
   display: grid;
-  grid-template-columns: 0.7fr 1.1fr 1.4fr 1.4fr 1.3fr 46px 20px;
+  grid-template-columns: 0.7fr 1.1fr 1.4fr 1.3fr 46px 20px;
   align-items: center;
   gap: clamp(14px, 1.6vw, 26px);
   padding: 0 clamp(14px, 1.5vw, 22px);

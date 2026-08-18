@@ -77,6 +77,22 @@ export function boxTotalArea(id: string): number | null {
   return Math.round(all.reduce((s, x) => s + (x.area ?? 0), 0) * 10) / 10
 }
 
+// Parking spaces from the site plan: 4 by default, 5 for P13/B1, 3 for P14/B2.
+export function boxParking(id: string): number {
+  if (id === 'P13') return 5
+  if (id === 'P14') return 3
+  return 4
+}
+
+// Price = real area × 65 000 Kč + parking spaces × 100 000 Kč. Null if area unknown.
+const PRICE_PER_M2 = 65000
+const PRICE_PER_PARKING = 100000
+export function boxComputedPrice(id: string): number | null {
+  const area = boxTotalArea(id)
+  if (area == null) return null
+  return Math.round(area * PRICE_PER_M2 + boxParking(id) * PRICE_PER_PARKING)
+}
+
 // Odd boxes use the "lichy" drawings, even boxes the mirrored "sudy" drawings.
 // 1.NP plans include the parking layout from the site plan: 4 spaces by default,
 // except P13/B1 (5 spaces) and P14/B2 (3 spaces), which have dedicated drawings.
