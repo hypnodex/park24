@@ -164,7 +164,7 @@ function Header({
 
 function Hero() {
   // Skipping the element entirely (rather than hiding it) also skips the
-  // download; hero.jpg stays visible underneath as the still fallback.
+  // download; the poster frame stays visible underneath as the still fallback.
   const reducedMotion = usePrefersReducedMotion()
 
   return (
@@ -178,7 +178,7 @@ function Hero() {
             loop
             playsInline
             preload="auto"
-            poster="/assets/hero.jpg"
+            poster="/assets/hero-poster.jpg"
           >
             <source src="/assets/hero.mp4" type="video/mp4" />
           </video>

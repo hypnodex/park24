@@ -159,13 +159,14 @@
   padding-bottom: clamp(32px, 4.5vw, 84px);
   margin-top: 0;
 }
-/* Still image doubles as the video poster and as the fallback when the video
+/* This is the video's own first frame, so the swap from still to playing video
+   is invisible. It doubles as the poster and as the fallback when the video
    can't play (reduced motion, decode failure, unsupported codec). */
 .hero-bg {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background: url('/assets/hero.jpg') center center / cover no-repeat;
+  background: url('/assets/hero-poster.jpg') center center / cover no-repeat;
 }
 .hero-video {
   position: absolute;
