@@ -1229,8 +1229,8 @@ function Field({
 
 const fmtArea = (n: number) => n.toLocaleString('cs-CZ', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
-/** Room legend for one floor. Columns follow the design: fixed number column,
- *  name fills the rest, both numeric columns right-aligned. */
+/** Room legend for one floor: number, room name and floor area. Clear height
+ *  (s.v.) is kept in the data but no longer shown. */
 function RoomLegend({ rows }: { rows: Room[] }) {
   const complete = rows.every((r) => r.area != null)
   const total = rows.reduce((s, r) => s + (r.area ?? 0), 0)
@@ -1241,13 +1241,11 @@ function RoomLegend({ rows }: { rows: Room[] }) {
           <col className="bx-col-code" />
           <col />
           <col />
-          <col />
         </colgroup>
         <thead>
           <tr>
             <th>č.</th>
             <th>Místnost</th>
-            <th className="num">s.v. [m]</th>
             <th className="num">Plocha [m²]</th>
           </tr>
         </thead>
@@ -1256,7 +1254,6 @@ function RoomLegend({ rows }: { rows: Room[] }) {
             <tr key={r.code}>
               <td className="code">{r.code}</td>
               <td>{r.name}</td>
-              <td className="num">{r.sv}</td>
               <td className="num">{r.area != null ? fmtArea(r.area) : '—'}</td>
             </tr>
           ))}
@@ -1264,7 +1261,7 @@ function RoomLegend({ rows }: { rows: Room[] }) {
         {complete && (
           <tfoot>
             <tr>
-              <td colSpan={3}>Celkem</td>
+              <td colSpan={2}>Celkem</td>
               <td className="num">{fmtArea(total)}</td>
             </tr>
           </tfoot>
