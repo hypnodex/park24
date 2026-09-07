@@ -1,5 +1,6 @@
 // Per-box room legends (LEGENDA MÍSTNOSTÍ) — 1.NP + 2.NP, areas in m².
-// Source: Pudorysy/Fin/Sources (17 boxes: BOX 1–12 → P1–P12, BOX B1–B5 → P13–P17).
+// Source: Pudorysy/Fin/Sources — ids follow the project drawings:
+// long row A1–A12, short row B1–B5.
 // `null` area = source screenshot was cropped and the value must still be filled in.
 
 export type Room = {
@@ -21,23 +22,23 @@ type Vars = {
 }
 
 const V: Record<string, Vars> = {
-  P1:  { np1: { kancelar: 29.0, uklid: 7.7, chodba: 3.5, sklad: 188.4 }, np2: { kancelar: 51.7, sklad: 3.7 } },
-  P2:  { np1: { kancelar: 30.0, uklid: 7.8, chodba: 3.2, sklad: 178.4 }, np2: { kancelar: 53.2, sklad: 3.5 } },
-  P3:  { np1: { kancelar: 27.8, uklid: 7.8, chodba: 3.2, sklad: 184.8 }, np2: { kancelar: 51.7, sklad: 3.7 } },
-  P4:  { np1: { kancelar: 30.0, uklid: 7.8, chodba: 3.2, sklad: 178.4 }, np2: { kancelar: 53.2, sklad: 3.1 } },
-  P5:  { np1: { kancelar: 27.8, uklid: 7.8, chodba: 3.2, sklad: 184.9 }, np2: { kancelar: 51.7, sklad: 3.7 } },
-  P6:  { np1: { kancelar: 30.0, uklid: 7.7, chodba: 3.2, sklad: 178.7 }, np2: { kancelar: 54.7, sklad: 3.3 } },
-  P7:  { np1: { kancelar: 28.7, uklid: 7.7, chodba: 3.2, sklad: 191.6 }, np2: { kancelar: 51.4, sklad: 3.7 } },
-  P8:  { np1: { kancelar: 29.1, uklid: 7.8, chodba: 3.2, sklad: 178.5 }, np2: { kancelar: 53.2, sklad: 3.1 } },
-  P9:  { np1: { kancelar: 29.1, uklid: 7.8, chodba: 3.2, sklad: 184.9 }, np2: { kancelar: 51.7, sklad: 3.7 } },
-  P10: { np1: { kancelar: 30.1, uklid: 7.8, chodba: 3.2, sklad: 178.4 }, np2: { kancelar: 53.2, sklad: 3.1 } },
-  P11: { np1: { kancelar: 27.8, uklid: 7.8, chodba: 3.2, sklad: 184.9 }, np2: { kancelar: 51.7, sklad: 3.7 } },
-  P12: { np1: { kancelar: 30.0, uklid: 8.2, chodba: 3.0, sklad: 178.1 }, np2: { kancelar: 54.7, sklad: 3.4 } },
-  P13: { np1: { kancelar: 29.0, uklid: 8.7, chodba: 3.2, sklad: 178.1 }, np2: { kancelar: 54.7, sklad: 3.4 } },
-  P14: { np1: { kancelar: 30.5, uklid: 8.7, chodba: 3.4, sklad: 191.0 }, np2: { kancelar: 53.1, sklad: 2.7, skladSv: '2,6' } },
-  P15: { np1: { kancelar: 30.1, uklid: 8.7, chodba: 3.2, sklad: 178.4 }, np2: { kancelar: 51.7, sklad: 3.7 } },
-  P16: { np1: { kancelar: 27.8, uklid: 8.7, chodba: 3.2, sklad: 184.9 }, np2: { kancelar: 53.2, sklad: 3.1 } },
-  P17: { np1: { kancelar: 30.1, uklid: 8.7, chodba: 3.2, sklad: 178.4 }, np2: { kancelar: 51.7, sklad: 3.7 } },
+  A1:  { np1: { kancelar: 29.0, uklid: 7.7, chodba: 3.5, sklad: 188.4 }, np2: { kancelar: 51.7, sklad: 3.7 } },
+  A2:  { np1: { kancelar: 30.0, uklid: 7.8, chodba: 3.2, sklad: 178.4 }, np2: { kancelar: 53.2, sklad: 3.5 } },
+  A3:  { np1: { kancelar: 27.8, uklid: 7.8, chodba: 3.2, sklad: 184.8 }, np2: { kancelar: 51.7, sklad: 3.7 } },
+  A4:  { np1: { kancelar: 30.0, uklid: 7.8, chodba: 3.2, sklad: 178.4 }, np2: { kancelar: 53.2, sklad: 3.1 } },
+  A5:  { np1: { kancelar: 27.8, uklid: 7.8, chodba: 3.2, sklad: 184.9 }, np2: { kancelar: 51.7, sklad: 3.7 } },
+  A6:  { np1: { kancelar: 30.0, uklid: 7.7, chodba: 3.2, sklad: 178.7 }, np2: { kancelar: 54.7, sklad: 3.3 } },
+  A7:  { np1: { kancelar: 28.7, uklid: 7.7, chodba: 3.2, sklad: 191.6 }, np2: { kancelar: 51.4, sklad: 3.7 } },
+  A8:  { np1: { kancelar: 29.1, uklid: 7.8, chodba: 3.2, sklad: 178.5 }, np2: { kancelar: 53.2, sklad: 3.1 } },
+  A9:  { np1: { kancelar: 29.1, uklid: 7.8, chodba: 3.2, sklad: 184.9 }, np2: { kancelar: 51.7, sklad: 3.7 } },
+  A10: { np1: { kancelar: 30.1, uklid: 7.8, chodba: 3.2, sklad: 178.4 }, np2: { kancelar: 53.2, sklad: 3.1 } },
+  A11: { np1: { kancelar: 27.8, uklid: 7.8, chodba: 3.2, sklad: 184.9 }, np2: { kancelar: 51.7, sklad: 3.7 } },
+  A12: { np1: { kancelar: 30.0, uklid: 8.2, chodba: 3.0, sklad: 178.1 }, np2: { kancelar: 54.7, sklad: 3.4 } },
+  B1: { np1: { kancelar: 29.0, uklid: 8.7, chodba: 3.2, sklad: 178.1 }, np2: { kancelar: 54.7, sklad: 3.4 } },
+  B2: { np1: { kancelar: 30.5, uklid: 8.7, chodba: 3.4, sklad: 191.0 }, np2: { kancelar: 53.1, sklad: 2.7, skladSv: '2,6' } },
+  B3: { np1: { kancelar: 30.1, uklid: 8.7, chodba: 3.2, sklad: 178.4 }, np2: { kancelar: 51.7, sklad: 3.7 } },
+  B4: { np1: { kancelar: 27.8, uklid: 8.7, chodba: 3.2, sklad: 184.9 }, np2: { kancelar: 53.2, sklad: 3.1 } },
+  B5: { np1: { kancelar: 30.1, uklid: 8.7, chodba: 3.2, sklad: 178.4 }, np2: { kancelar: 51.7, sklad: 3.7 } },
 }
 
 function build(v: Vars): BoxRooms {
@@ -77,10 +78,10 @@ export function boxTotalArea(id: string): number | null {
   return Math.round(all.reduce((s, x) => s + (x.area ?? 0), 0) * 10) / 10
 }
 
-// Parking spaces from the site plan: 4 by default, 5 for P13/B1, 3 for P14/B2.
+// Parking spaces from the site plan: 4 by default, 5 for B1, 3 for B2.
 export function boxParking(id: string): number {
-  if (id === 'P13') return 5
-  if (id === 'P14') return 3
+  if (id === 'B1') return 5
+  if (id === 'B2') return 3
   return 4
 }
 
@@ -93,16 +94,17 @@ export function boxComputedPrice(id: string): number | null {
   return Math.round(area * PRICE_PER_M2 + boxParking(id) * PRICE_PER_PARKING)
 }
 
-// Odd boxes use the "lichy" drawings, even boxes the mirrored "sudy" drawings.
+// Within each row, odd-numbered boxes use the "lichy" drawings and even ones the
+// mirrored "sudy" drawings — A1/A3/… and B1/B3/… share the same handedness.
 // 1.NP plans include the parking layout from the site plan: 4 spaces by default,
-// except P13/B1 (5 spaces) and P14/B2 (3 spaces), which have dedicated drawings.
+// except B1 (5 spaces) and B2 (3 spaces), which have dedicated drawings.
 export function boxPlans(id: string): { np1: string; np2: string } {
   const n = parseInt(id.replace(/\D/g, ''), 10)
   const even = n % 2 === 0
   const np2 = even ? '/assets/plan-2np-even.png' : '/assets/plan-2np-odd.png'
   let np1: string
-  if (id === 'P13') np1 = '/assets/plan-1np-b1.png'
-  else if (id === 'P14') np1 = '/assets/plan-1np-b2.png'
+  if (id === 'B1') np1 = '/assets/plan-1np-b1.png'
+  else if (id === 'B2') np1 = '/assets/plan-1np-b2.png'
   else np1 = even ? '/assets/plan-1np-even.png' : '/assets/plan-1np-odd.png'
   return { np1, np2 }
 }

@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
  * SPA navigation without a library: pushState + a synthetic popstate so the
  * single <Root> listener re-renders. Vercel rewrites (vercel.json) + Vite
  * history-fallback serve index.html for every non-/api path, so deep links
- * like /box/P1 work on hard refresh too.
+ * like /box/A1 work on hard refresh too.
  */
 export function navigate(to: string) {
   if (to === window.location.pathname + window.location.hash) return

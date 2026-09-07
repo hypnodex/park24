@@ -1,289 +1,291 @@
-import { BOX_MAP_IMAGE, BOX_POLYGONS } from './boxMapPolygons'
-import { STATUS_LABEL, formatCzk, type Box } from './store'
+import { formatCzk, type Box } from './store'
 import { boxRooms, boxPlans, boxTotalArea, boxComputedPrice, boxParking, type Room } from './boxRooms'
 
 /**
- * Generates a one-page A4 PDF "box card" and triggers a download.
+ * Generates the one-page A4 landscape "box card" PDF and triggers a download.
  *
- * The whole card is drawn onto a canvas (Czech diacritics render correctly via
- * the system font — jsPDF's built-in fonts can't encode č/ř/ž…), then placed as
- * a single full-page image. Not selectable text, but pixel-perfect and reliable.
+ * Layout follows the Figma frame "A4 - 1" (node 223:3618), designed at
+ * 1689×1194 — exactly A4 landscape. Left sidebar carries the logo, price and
+ * both room legends over a navy contact block; the right side shows the two
+ * floor plans and a photo strip.
  *
- * Layout: header → title/specs → 1.NP plan + room legend → 2.NP plan + legend →
- * small location aerial + contact.
+ * The card is painted onto a canvas and placed as a single full-page image:
+ * jsPDF's built-in fonts can't encode Czech diacritics (č/ř/ž…), the system
+ * font can. Not selectable text, but reliable and pixel-accurate.
  */
 export async function generateBoxPdf(box: Box): Promise<void> {
   const scale = 2
-  const W = 1240 * scale
-  const H = 1754 * scale // A4 portrait ratio
   const canvas = document.createElement('canvas')
-  canvas.width = W
-  canvas.height = H
+  canvas.width = W * scale
+  canvas.height = H * scale
   const ctx = canvas.getContext('2d')!
   ctx.scale(scale, scale)
 
-  drawBase(ctx, box)
-  await drawFloor(ctx, '1. NP', boxPlans(box.id).np1, boxRooms(box.id)?.np1 ?? [], 275)
-  await drawFloor(ctx, '2. NP', boxPlans(box.id).np2, boxRooms(box.id)?.np2 ?? [], 640)
-  await drawLocation(ctx, box, 1010)
+  await ensureFonts()
+
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, W, H)
+
+  await drawSidebar(ctx, box)
+  await drawPlans(ctx, box)
+  await drawPhotos(ctx)
 
   const img = canvas.toDataURL('image/jpeg', 0.92)
   const { jsPDF } = await import('jspdf') // lazy: keeps jsPDF out of the initial bundle
-  const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
-  pdf.addImage(img, 'JPEG', 0, 0, 210, 297)
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' })
+  pdf.addImage(img, 'JPEG', 0, 0, 297, 210)
   pdf.save(`Park24-Box-${box.id}.pdf`)
 }
 
-const ACCENT = '#ff0066' // Park24 brand pink
+/* ─── Design tokens (Figma frame 223:3618) ──────────────────────────────── */
+const W = 1689
+const H = 1194
 const NAVY = '#1f2b5e'
-const INK = '#0f1720'
-const MUTED = '#6b7789'
-const LINE = '#e3e8ef'
-const STATUS_COLOR: Record<string, string> = {
-  volny: '#ff0066',
-  rezervovano: '#d97706',
-  prodano: '#dc2626',
+const NAVY_60 = 'rgba(31, 43, 94, 0.6)'
+const NAVY_72 = 'rgba(31, 43, 94, 0.72)'
+const ROW_LINE = 'rgba(31, 43, 94, 0.08)'
+const SIDEBAR_BG = '#f2f3f6'
+
+const SIDEBAR_W = 504
+const PAD = 43
+const CARD_W = 421
+
+const DISPLAY = "'Inter', system-ui, -apple-system, sans-serif"
+const BODY = "'Roboto', system-ui, -apple-system, sans-serif"
+
+/** Table row height. The design uses 28, but its 2. NP table is a copy of the
+ *  1. NP one; the real 2. NP legend has 8 rows, which at 28px would run into
+ *  the contact block. 25 keeps both tables identical and inside the sidebar. */
+const ROW = 25
+
+const fmtArea = (n: number) =>
+  n.toLocaleString('cs-CZ', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+
+/** Waits for the webfonts so the canvas doesn't fall back to a system face. */
+async function ensureFonts(): Promise<void> {
+  if (!('fonts' in document)) return
+  try {
+    await Promise.all([
+      document.fonts.load(`700 34px ${DISPLAY}`),
+      document.fonts.load(`400 15px ${BODY}`),
+      document.fonts.load(`500 12px ${BODY}`),
+      document.fonts.load(`700 20px ${BODY}`),
+    ])
+    await document.fonts.ready
+  } catch {
+    /* fall back to whatever is available */
+  }
 }
-const W = 1240
-const M = 80
 
-const fmt = (n: number) => n.toLocaleString('cs-CZ', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
-
-/** Header, title, specs, contact, footer. */
-function drawBase(ctx: CanvasRenderingContext2D, box: Box) {
-  ctx.fillStyle = '#ffffff'
-  ctx.fillRect(0, 0, W, 1754)
+/* ─── Left sidebar ──────────────────────────────────────────────────────── */
+async function drawSidebar(ctx: CanvasRenderingContext2D, box: Box) {
+  ctx.fillStyle = SIDEBAR_BG
+  ctx.fillRect(0, 0, SIDEBAR_W, H)
 
   // wordmark
-  ctx.textBaseline = 'alphabetic'
-  ctx.textAlign = 'left'
-  ctx.fillStyle = INK
-  ctx.font = '800 40px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
-  ctx.fillText('Park', M, 88)
-  ctx.fillStyle = ACCENT
-  ctx.fillText('24', M + ctx.measureText('Park').width, 88)
-  ctx.fillStyle = MUTED
-  ctx.font = '600 20px system-ui, sans-serif'
-  ctx.textAlign = 'right'
-  ctx.fillText('KARTA BOXU', W - M, 84)
+  const logo = await loadImage('/assets/logo_park24.svg').catch(() => null)
+  if (logo) ctx.drawImage(logo, PAD, 45, 266, 83)
 
-  // title + status pill
-  ctx.textAlign = 'left'
-  ctx.fillStyle = INK
-  ctx.font = '800 56px system-ui, sans-serif'
-  ctx.fillText(`Box ${box.id}`, M, 172)
-  const titleW = ctx.measureText(`Box ${box.id}`).width
-
-  const label = STATUS_LABEL[box.status]
-  ctx.font = '700 22px system-ui, sans-serif'
-  const pw = ctx.measureText(label).width + 44
-  const px = M + titleW + 26
-  roundRect(ctx, px, 138, pw, 40, 20)
-  ctx.fillStyle = STATUS_COLOR[box.status]
-  ctx.fill()
+  // price card
   ctx.fillStyle = '#ffffff'
-  ctx.fillText(label, px + 22, 165)
-
-  // specs sublines — real summed area + computed price (parking incl.)
-  const area = boxTotalArea(box.id) ?? box.area
-  const price = boxComputedPrice(box.id) ?? box.price
-  const areaStr = area.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })
-  ctx.textAlign = 'left'
-  ctx.fillStyle = INK
-  ctx.font = '600 24px system-ui, sans-serif'
-  ctx.fillText(`${areaStr} m²  ·  ${formatCzk(price)}  ·  ${boxParking(box.id)}× parkování`, M, 214)
-  ctx.fillStyle = MUTED
-  ctx.font = '500 20px system-ui, sans-serif'
-  ctx.fillText('Dvoupodlažní · showroom + administrativa · Energetická třída A · klimatizace', M, 244)
-
-  // contact block (bottom)
-  const cy = 1560
-  ctx.fillStyle = '#f4f7fb'
-  roundRect(ctx, M, cy, W - 2 * M, 120, 16)
+  roundRect(ctx, PAD, 175, CARD_W, 110, 16)
   ctx.fill()
+
   ctx.textAlign = 'left'
-  ctx.fillStyle = INK
-  ctx.font = '700 22px system-ui, sans-serif'
-  ctx.fillText('Kontakt pro rezervaci', M + 30, cy + 42)
-  ctx.fillStyle = MUTED
-  ctx.font = '500 20px system-ui, sans-serif'
-  ctx.fillText('Ing. Ondřej Menšík · Esprit living s.r.o.', M + 30, cy + 76)
-  ctx.textAlign = 'right'
-  ctx.fillText('+420 737 889 777 · mensik@stemfire.cz', W - M - 30, cy + 76)
-
-  // footer
-  ctx.textAlign = 'center'
-  ctx.fillStyle = MUTED
-  ctx.font = '500 19px system-ui, sans-serif'
-  ctx.fillText('park24.vercel.app', W / 2, 1716)
-}
-
-/** One floor: section label + plan drawing (left) + room legend table (right). */
-async function drawFloor(
-  ctx: CanvasRenderingContext2D,
-  title: string,
-  planSrc: string,
-  rooms: Room[],
-  y: number,
-) {
-  const planW = 560
-  const planH = 300
-  const gap = 30
-  const legendX = M + planW + gap
-  const legendW = W - M - legendX
-
-  // section label
-  ctx.textAlign = 'left'
+  ctx.textBaseline = 'top'
   ctx.fillStyle = NAVY
-  ctx.font = '700 26px system-ui, sans-serif'
-  ctx.fillText(`${title} — půdorys a výměry`, M, y)
+  ctx.font = `700 34px ${DISPLAY}`
+  ctx.fillText(formatCzk(boxComputedPrice(box.id) ?? box.price), PAD + 24, 199)
 
-  // plan image (transparent — no fill; just a subtle framing border)
-  const py = y + 18
-  const plan = await loadImage(planSrc).catch(() => null)
-  if (plan) {
-    drawContain(ctx, plan, M + 16, py + 16, planW - 32, planH - 32)
-  }
-  ctx.strokeStyle = LINE
-  ctx.lineWidth = 1
-  roundRect(ctx, M, py, planW, planH, 14)
-  ctx.stroke()
+  const area = boxTotalArea(box.id) ?? box.area
+  ctx.fillStyle = NAVY_72
+  ctx.font = `400 15px ${BODY}`
+  ctx.fillText(
+    `${area.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })} m² · ${boxParking(box.id)}× parkování`,
+    PAD + 24,
+    243,
+  )
 
-  drawLegend(ctx, rooms, legendX, py, legendW)
+  // both room legends, stacked; the second one starts below whatever the first
+  // one actually needs, so a longer 2. NP table can't collide with it
+  const rooms = boxRooms(box.id)
+  let y = 333.5
+  y = drawLegendBlock(ctx, '1. NP', rooms?.np1 ?? [], y)
+  drawLegendBlock(ctx, '2. NP', rooms?.np2 ?? [], y + 42)
+
+  await drawContact(ctx)
 }
 
-/** Room legend table (č. / místnost / plocha m²), office row highlighted. */
-function drawLegend(ctx: CanvasRenderingContext2D, rooms: Room[], x: number, y: number, w: number) {
-  if (!rooms.length) return
-  const headH = 30
-  const rowH = 27
-  const complete = rooms.every((r) => r.area != null)
-  const totalH = headH + rooms.length * rowH + (complete ? rowH : 0)
-
-  // header
-  ctx.fillStyle = '#f4f7fb'
-  ctx.fillRect(x, y, w, headH)
-  ctx.fillStyle = MUTED
-  ctx.font = '600 15px system-ui, sans-serif'
+/** Floor label + room table. Returns the y where the block ends. */
+function drawLegendBlock(ctx: CanvasRenderingContext2D, label: string, rooms: Room[], y: number): number {
   ctx.textAlign = 'left'
-  ctx.fillText('č.', x + 12, y + 20)
-  ctx.fillText('Místnost', x + 66, y + 20)
-  ctx.textAlign = 'right'
-  ctx.fillText('Plocha [m²]', x + w - 12, y + 20)
+  ctx.textBaseline = 'top'
+  ctx.fillStyle = NAVY
+  ctx.font = `700 20px ${BODY}`
+  ctx.fillText(label, PAD, y + 4)
 
-  let ry = y + headH
-  rooms.forEach((r) => {
-    const office = r.name === 'Kancelář'
-    ctx.textAlign = 'left'
-    ctx.fillStyle = MUTED
-    ctx.font = '500 15px system-ui, sans-serif'
-    ctx.fillText(r.code, x + 12, ry + 19)
-    ctx.fillStyle = INK
-    ctx.font = `${office ? 700 : 500} 18px system-ui, sans-serif`
-    ctx.fillText(r.name, x + 66, ry + 19)
-    ctx.textAlign = 'right'
-    ctx.fillText(r.area != null ? fmt(r.area) : '—', x + w - 12, ry + 19)
-    ctx.strokeStyle = LINE
+  const tableY = y + 35.5
+  const x = PAD
+  const w = CARD_W
+  const codeW = 85
+  const nameX = x + codeW + 14
+  const valX = x + w - 24
+
+  const cell = (text: string, cx: number, cy: number, align: CanvasTextAlign) => {
+    ctx.textAlign = align
+    ctx.textBaseline = 'middle'
+    ctx.fillText(text, cx, cy + ROW / 2)
+  }
+
+  // head — no fill in the design, just the type
+  ctx.fillStyle = NAVY_60
+  ctx.font = `600 12px ${BODY}`
+  cell('č.', x + 24, tableY, 'left')
+  cell('Místnost', nameX, tableY, 'left')
+  cell('Plocha [m²]', valX, tableY, 'right')
+
+  let ry = tableY + ROW
+  const line = (ly: number) => {
+    ctx.strokeStyle = ROW_LINE
     ctx.lineWidth = 1
     ctx.beginPath()
-    ctx.moveTo(x, ry + rowH)
-    ctx.lineTo(x + w, ry + rowH)
+    ctx.moveTo(x, ly + 0.5)
+    ctx.lineTo(x + w, ly + 0.5)
     ctx.stroke()
-    ry += rowH
-  })
+  }
 
+  for (const r of rooms) {
+    line(ry)
+    ctx.font = `400 12px ${BODY}`
+    ctx.fillStyle = NAVY_60
+    cell(r.code, x + 24, ry, 'left')
+    ctx.fillStyle = NAVY
+    cell(r.name, nameX, ry, 'left')
+    cell(r.area != null ? fmtArea(r.area) : '—', valX, ry, 'right')
+    ry += ROW
+  }
+
+  const complete = rooms.length > 0 && rooms.every((r) => r.area != null)
   if (complete) {
+    line(ry)
     const total = rooms.reduce((s, r) => s + (r.area ?? 0), 0)
-    ctx.fillStyle = '#eef2f7'
-    ctx.fillRect(x, ry, w, rowH)
-    ctx.fillStyle = INK
-    ctx.font = '700 18px system-ui, sans-serif'
-    ctx.textAlign = 'left'
-    ctx.fillText('Celkem', x + 12, ry + 19)
-    ctx.textAlign = 'right'
-    ctx.fillText(fmt(total), x + w - 12, ry + 19)
+    ctx.font = `700 12px ${BODY}`
+    ctx.fillStyle = NAVY
+    cell('Celkem', x + 24, ry, 'left')
+    cell(fmtArea(total), valX, ry, 'right')
+    ry += ROW
   }
 
-  ctx.strokeStyle = LINE
-  ctx.lineWidth = 1
-  ctx.strokeRect(x, y, w, totalH)
+  return ry
 }
 
-/** Small location aerial with the box highlighted (bottom, left of contact). */
-async function drawLocation(ctx: CanvasRenderingContext2D, box: Box, y: number) {
-  ctx.textAlign = 'left'
+/** Navy contact block pinned to the bottom of the sidebar. */
+async function drawContact(ctx: CanvasRenderingContext2D) {
+  const top = 941
   ctx.fillStyle = NAVY
-  ctx.font = '700 26px system-ui, sans-serif'
-  ctx.fillText('Poloha v areálu', M, y)
+  ctx.fillRect(0, top, SIDEBAR_W, H - top)
 
-  const bx = M
-  const by = y + 18
-  const bw = W - 2 * M
-  const bh = 300
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'top'
+  ctx.fillStyle = '#ffffff'
+  ctx.font = `700 20px ${BODY}`
+  ctx.fillText('Kontakt pro rezervaci', PAD, top + 39)
 
-  const img = await loadImage(BOX_MAP_IMAGE.src).catch(() => null)
-  ctx.save()
-  roundRect(ctx, bx, by, bw, bh, 14)
-  ctx.clip()
-  ctx.fillStyle = '#dfe5ec'
-  ctx.fillRect(bx, by, bw, bh)
+  ctx.font = `400 13.7px ${BODY}`
+  ctx.fillText('Ing. Ondřej Menšík', PAD + 1, top + 92)
+  ctx.fillText('Esprit Living s.r.o.', PAD + 1, top + 110)
 
-  const poly = BOX_POLYGONS.find((p) => p.id === box.id)
-  if (img) {
-    const iw = img.naturalWidth
-    const ih = img.naturalHeight
-    const s = iw / BOX_MAP_IMAGE.width // polygon-space → image px
-    const pts = poly
-      ? poly.points.trim().split(/\s+/).map((pair) => {
-          const [px, py] = pair.split(',').map(Number)
-          return { x: px * s, y: py * s }
-        })
-      : []
+  ctx.font = `700 15.9px ${BODY}`
+  ctx.fillText('T.', PAD + 1, top + 141)
+  ctx.fillText('+420 737 889 777', PAD + 27, top + 141)
+  ctx.fillText('E.', PAD + 1, top + 160)
+  ctx.fillText('mensik@stemfire.cz', PAD + 27, top + 160)
 
-    // cover-fit (preserve aspect, no distortion), centered on the box
-    const cover = Math.max(bw / iw, bh / ih)
-    const dw = iw * cover
-    const dh = ih * cover
-    let fx = iw / 2
-    let fy = ih / 2
-    if (pts.length) {
-      const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y)
-      fx = (Math.min(...xs) + Math.max(...xs)) / 2
-      fy = (Math.min(...ys) + Math.max(...ys)) / 2
-    }
-    let dx = bx + bw / 2 - fx * cover
-    let dy = by + bh / 2 - fy * cover
-    dx = Math.min(bx, Math.max(bx + bw - dw, dx)) // clamp so the banner stays covered
-    dy = Math.min(by, Math.max(by + bh - dh, dy))
-    ctx.drawImage(img, dx, dy, dw, dh)
-
-    if (pts.length) {
-      ctx.beginPath()
-      pts.forEach((p, i) => {
-        const X = dx + p.x * cover
-        const Y = dy + p.y * cover
-        if (i === 0) ctx.moveTo(X, Y)
-        else ctx.lineTo(X, Y)
-      })
-      ctx.closePath()
-      ctx.fillStyle = 'rgba(255,0,102,0.26)'
-      ctx.fill()
-      ctx.strokeStyle = ACCENT
-      ctx.lineWidth = 4
-      ctx.stroke()
-    }
+  const avatar = await loadImage('/assets/avatar.jpg').catch(() => null)
+  if (avatar) {
+    const size = 64
+    const ax = 394
+    const ay = top + 87
+    ctx.save()
+    ctx.beginPath()
+    ctx.arc(ax + size / 2, ay + size / 2, size / 2, 0, Math.PI * 2)
+    ctx.clip()
+    drawCover(ctx, avatar, ax, ay, size, size)
+    ctx.restore()
   }
-  ctx.restore()
 }
 
-function drawContain(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number) {
-  const a = img.naturalWidth / img.naturalHeight
-  let dw = w
-  let dh = w / a
-  if (dh > h) {
-    dh = h
-    dw = h * a
+/* ─── Right side: floor plans ───────────────────────────────────────────── */
+async function drawPlans(ctx: CanvasRenderingContext2D, box: Box) {
+  const plans = boxPlans(box.id)
+  // Slots are anchored top-left like the design; each drawing keeps its own
+  // aspect ratio, which differs between the standard, B1 and B2 layouts.
+  await drawPlan(ctx, '1. NP', plans.np1, 617, 58, 934, 340)
+  await drawPlan(ctx, '2. NP', plans.np2, 617, 498, 934, 302)
+}
+
+async function drawPlan(
+  ctx: CanvasRenderingContext2D,
+  label: string,
+  src: string,
+  x: number,
+  tabY: number,
+  slotW: number,
+  slotH: number,
+) {
+  // floor pill
+  ctx.font = `600 14px ${BODY}`
+  const tw = 80
+  const th = 31
+  roundRect(ctx, x, tabY, tw, th, th / 2)
+  ctx.fillStyle = NAVY
+  ctx.fill()
+  ctx.fillStyle = '#ffffff'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(label, x + tw / 2, tabY + th / 2 + 1)
+
+  const plan = await loadImage(src).catch(() => null)
+  if (!plan) return
+  const a = plan.naturalWidth / plan.naturalHeight
+  let dw = slotW
+  let dh = slotW / a
+  if (dh > slotH) {
+    dh = slotH
+    dw = slotH * a
   }
+  ctx.drawImage(plan, x, tabY + 52, dw, dh)
+}
+
+/* ─── Right side: photo strip ───────────────────────────────────────────── */
+async function drawPhotos(ctx: CanvasRenderingContext2D) {
+  const srcs = ['/assets/gallery/g1.jpg', '/assets/gallery/g2.jpg', '/assets/gallery/g5.jpg']
+  const x0 = 620
+  const y = 927
+  const total = 961
+  const gap = 18
+  const w = (total - gap * (srcs.length - 1)) / srcs.length
+  const h = 193
+
+  for (let i = 0; i < srcs.length; i++) {
+    const img = await loadImage(srcs[i]).catch(() => null)
+    const x = x0 + i * (w + gap)
+    ctx.save()
+    roundRect(ctx, x, y, w, h, 16)
+    ctx.clip()
+    ctx.fillStyle = '#e3e8ef'
+    ctx.fillRect(x, y, w, h)
+    if (img) drawCover(ctx, img, x, y, w, h)
+    ctx.restore()
+  }
+}
+
+/* ─── Helpers ───────────────────────────────────────────────────────────── */
+/** Fills the box, cropping the overflow — the canvas equivalent of object-fit: cover. */
+function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number) {
+  const s = Math.max(w / img.naturalWidth, h / img.naturalHeight)
+  const dw = img.naturalWidth * s
+  const dh = img.naturalHeight * s
   ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh)
 }
 

@@ -6,6 +6,21 @@ import { BOX_MAP_IMAGE, BOX_POLYGONS } from './boxMapPolygons'
 import { boxRooms, boxPlans, boxTotalArea, boxComputedPrice, boxParking, type Room } from './boxRooms'
 import { navigate } from './router'
 import { generateBoxPdf } from './boxPdf'
+import { BOX_STANDARDS } from './boxStandards'
+
+/** Respects the OS "reduce motion" setting — used to skip the hero video. */
+function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(
+    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  )
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const onChange = () => setReduced(mq.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  return reduced
+}
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /*  Main App                                                                   */
@@ -32,7 +47,8 @@ export default function App() {
 
   return (
     <>
-      <Header scrolled={scrolled} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+      {/* White wordmark while the header floats over the hero video */}
+      <Header scrolled={scrolled} menuOpen={menuOpen} setMenuOpen={setMenuOpen} onDark={!scrolled} />
       <Hero />
       <Intro />
       <CarouselSection />
@@ -71,12 +87,15 @@ function Header({
   menuOpen,
   setMenuOpen,
   linkBase = '',
+  onDark = false,
 }: {
   scrolled: boolean
   menuOpen: boolean
   setMenuOpen: (v: boolean) => void
   /** Prefix for nav anchors; '/' on subpages so links jump back to the home sections. */
   linkBase?: string
+  /** Header sits over a dark photo — swap in the white wordmark. */
+  onDark?: boolean
 }) {
   const wrapRef = useRef<HTMLDivElement>(null)
 
@@ -93,7 +112,7 @@ function Header({
   return (
     <header className={`header-fixed${scrolled ? ' scrolled' : ''}`} id="header-fixed">
       <a href={`${linkBase}#top`} className="logo" aria-label="Park24">
-        <img src="/assets/logo_park24.svg" alt="Park24" />
+        <img src={onDark ? '/assets/logo_park24_white.svg' : '/assets/logo_park24.svg'} alt="Park24" />
       </a>
       <div className="menu-wrap" ref={wrapRef}>
         <button
@@ -144,9 +163,27 @@ function Header({
 /* ────────────────────────────────────────────────────────────────────────── */
 
 function Hero() {
+  // Skipping the element entirely (rather than hiding it) also skips the
+  // download; hero.jpg stays visible underneath as the still fallback.
+  const reducedMotion = usePrefersReducedMotion()
+
   return (
     <section className="hero" id="top">
-      <div className="hero-bg" aria-hidden />
+      <div className="hero-bg" aria-hidden>
+        {!reducedMotion && (
+          <video
+            className="hero-video"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            poster="/assets/hero.jpg"
+          >
+            <source src="/assets/hero.mp4" type="video/mp4" />
+          </video>
+        )}
+      </div>
       <h1 className="hero-title">
         Obchodně skladovací
         <br />
@@ -198,9 +235,61 @@ function Intro() {
 /*  Carousel                                                                   */
 /* ────────────────────────────────────────────────────────────────────────── */
 
+/** Continuous drift of the photo strip, in px per second. */
+const CAROUSEL_SPEED = 26
+/** Slowed down — not stopped — while the pointer is over the strip. */
+const CAROUSEL_HOVER_SPEED = 7
+
 function CarouselSection() {
   const trackRef = useRef<HTMLDivElement>(null)
+  const innerRef = useRef<HTMLDivElement>(null)
   const [lbAt, setLbAt] = useState<number | null>(null)
+  const [hovered, setHovered] = useState(false)
+  const reducedMotion = usePrefersReducedMotion()
+  // Speed lives in a ref so hovering doesn't restart the animation loop.
+  const speedRef = useRef(CAROUSEL_SPEED)
+  useEffect(() => {
+    speedRef.current = hovered ? CAROUSEL_HOVER_SPEED : CAROUSEL_SPEED
+  }, [hovered])
+
+  const running = lbAt === null && !reducedMotion
+
+  // The track renders its items twice, so wrapping at half the scroll width
+  // lands on an identical frame — the loop has no visible seam.
+  // Scroll snapping and the global `scroll-behavior: smooth` both fight
+  // per-frame scrollLeft writes, so `.auto` turns them off.
+  useEffect(() => {
+    const el = trackRef.current
+    const inner = innerRef.current
+    if (!el || !inner || !running) return
+    let raf = 0
+    let last = performance.now()
+    // The browser rounds scrollLeft to whole device pixels, so reading it back
+    // each frame would throw the sub-pixel remainder away and stall the drift.
+    let pos = el.scrollLeft
+    // Distance between copy A's first item and copy B's first item. Derived
+    // from the DOM rather than scrollWidth/2, which is skewed by the track's
+    // gutter padding and the gap between the two copies.
+    const loopDistance = () => {
+      const kids = inner.children
+      const half = kids.length / 2
+      if (half < 1) return 0
+      return (kids[half] as HTMLElement).offsetLeft - (kids[0] as HTMLElement).offsetLeft
+    }
+    const step = (now: number) => {
+      const dt = Math.min((now - last) / 1000, 0.1)
+      last = now
+      const loop = loopDistance()
+      if (loop > 1) {
+        pos += speedRef.current * dt
+        if (pos >= loop) pos -= loop
+        el.scrollLeft = pos
+      }
+      raf = requestAnimationFrame(step)
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [running])
 
   const slide = (dir: 1 | -1) => {
     if (!trackRef.current) return
@@ -212,47 +301,66 @@ function CarouselSection() {
     const i = GALLERY_IMAGES.findIndex((g) => g.src === src)
     setLbAt(i >= 0 ? i : 0)
   }
-  const cImg = (cls: string, src: string) => (
+  const cImg = (key: string, cls: string, src: string, clone: boolean) => (
     <button
+      key={key}
       type="button"
       className={`${cls} c-img-btn`}
       style={{ '--bg': `url(${src})` } as React.CSSProperties}
       onClick={() => openAt(src)}
-      aria-label="Zvětšit fotku"
+      aria-label={clone ? undefined : 'Zvětšit fotku'}
+      aria-hidden={clone || undefined}
+      tabIndex={clone ? -1 : undefined}
     />
   )
 
+  /** One pass of the strip. Rendered twice to make the loop seamless. */
+  const items = (clone: boolean) => {
+    const k = (n: string) => `${clone ? 'b' : 'a'}-${n}`
+    return [
+      cImg(k('g1'), 'c-side-img', '/assets/gallery/g1.jpg', clone),
+      <div className="c-card-lite" key={k('lite')} aria-hidden={clone || undefined}>
+        <svg className="glass-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 8V5a2 2 0 0 1 2-2h3" />
+          <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+          <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+          <path d="M21 16v3a2 2 0 0 1-2 2h-3" />
+        </svg>
+        <div>
+          <div className="glass-num">od 297 m²</div>
+          <div className="glass-label">Užitná plocha</div>
+        </div>
+      </div>,
+      cImg(k('g5'), 'c-main-img', '/assets/gallery/g5.jpg', clone),
+      <div className="c-card-dark" key={k('dark')} aria-hidden={clone || undefined}>
+        <div className="c-card-dark-text">
+          <h3>Na výběr {BOX_POLYGONS.length} boxů</h3>
+          <p>
+            Jednotlivé boxy lze propojit do většího celku a přizpůsobit tak dispozici
+            přesně vašemu provozu — od jedné jednotky až po celé křídlo.
+          </p>
+        </div>
+        <div className="c-avatar" aria-hidden />
+      </div>,
+      cImg(k('g4'), 'c-wide-img', '/assets/gallery/g4.jpg', clone),
+      cImg(k('g6'), 'c-side-img', '/assets/gallery/g6.jpg', clone),
+      cImg(k('g2'), 'c-tall-img', '/assets/gallery/g2.jpg', clone),
+    ]
+  }
+
   return (
     <section className="carousel-section" id="carousel">
-      <div className="carousel" ref={trackRef}>
-        <div className="carousel-track">
-          {cImg('c-side-img', '/assets/gallery/g1.jpg')}
-          <div className="c-card-lite">
-            <svg className="glass-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 8V5a2 2 0 0 1 2-2h3" />
-              <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
-              <path d="M3 16v3a2 2 0 0 0 2 2h3" />
-              <path d="M21 16v3a2 2 0 0 1-2 2h-3" />
-            </svg>
-            <div>
-              <div className="glass-num">od 297 m²</div>
-              <div className="glass-label">Užitná plocha</div>
-            </div>
-          </div>
-          {cImg('c-main-img', '/assets/gallery/g5.jpg')}
-          <div className="c-card-dark">
-            <div className="c-card-dark-text">
-              <h3>Na výběr {BOX_POLYGONS.length} boxů</h3>
-              <p>
-                Jednotlivé boxy lze propojit do většího celku a přizpůsobit tak dispozici
-                přesně vašemu provozu — od jedné jednotky až po celé křídlo.
-              </p>
-            </div>
-            <div className="c-avatar" aria-hidden />
-          </div>
-          {cImg('c-wide-img', '/assets/gallery/g4.jpg')}
-          {cImg('c-side-img', '/assets/gallery/g6.jpg')}
-          {cImg('c-tall-img', '/assets/gallery/g2.jpg')}
+      <div
+        className={`carousel${running ? ' auto' : ''}`}
+        ref={trackRef}
+        onPointerEnter={() => setHovered(true)}
+        onPointerLeave={() => setHovered(false)}
+        onFocusCapture={() => setHovered(true)}
+        onBlurCapture={() => setHovered(false)}
+      >
+        <div className="carousel-track" ref={innerRef}>
+          {items(false)}
+          {items(true)}
         </div>
       </div>
 
@@ -289,10 +397,8 @@ function Features() {
     { label: 'Řez', src: '/assets/plan-bok.png' },
   ]
 
-  useEffect(() => {
-    const t = setInterval(() => setSlideIdx((i) => (i + 1) % slides.length), 4500)
-    return () => clearInterval(t)
-  }, [slides.length])
+  // No autoplay — the plans are only stepped through by the arrows (or dots),
+  // so there is time to actually read a drawing.
 
   return (
     <section className="features" id="features">
@@ -1123,12 +1229,20 @@ function Field({
 
 const fmtArea = (n: number) => n.toLocaleString('cs-CZ', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
+/** Room legend for one floor. Columns follow the design: fixed number column,
+ *  name fills the rest, both numeric columns right-aligned. */
 function RoomLegend({ rows }: { rows: Room[] }) {
   const complete = rows.every((r) => r.area != null)
   const total = rows.reduce((s, r) => s + (r.area ?? 0), 0)
   return (
-    <div className="bd-room-table">
+    <div className="bx-table">
       <table>
+        <colgroup>
+          <col className="bx-col-code" />
+          <col />
+          <col />
+          <col />
+        </colgroup>
         <thead>
           <tr>
             <th>č.</th>
@@ -1160,14 +1274,142 @@ function RoomLegend({ rows }: { rows: Room[] }) {
   )
 }
 
+/** Full-bleed photo header: status, box name, price and the two actions. */
+function BoxHero({ box, onReserve }: { box: Box; onReserve: () => void }) {
+  const available = box.status === 'volny'
+  return (
+    <section className="bx-hero" id="top">
+      <div className="bx-hero-bg" aria-hidden />
+      <div className="bx-hero-body">
+        <div className="bx-hero-text">
+          <span className={`bx-status bx-status-${box.status}`}>
+            {available && <span className="dot" />}
+            {STATUS_LABEL[box.status]}
+          </span>
+          <h1 className="bx-hero-title">Box {box.id}</h1>
+          <div className="bx-hero-price">{formatCzk(displayPrice(box))}</div>
+          <div className="bx-hero-sub">
+            {fmtM2(displayArea(box))} m² · {boxParking(box.id)}× parkování
+          </div>
+        </div>
+
+        <div className="bx-hero-actions">
+          <button type="button" className="bx-btn ghost" onClick={() => generateBoxPdf(box)}>
+            <PdfIcon />
+            Stáhnout kartu (PDF)
+          </button>
+          <button
+            type="button"
+            className="bx-btn primary"
+            disabled={!available}
+            onClick={onReserve}
+          >
+            {available ? 'Rezervovat box' : `Box ${STATUS_LABEL[box.status].toLowerCase()}`}
+            {available && (
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <polyline points="14 5 21 12 14 19" />
+              </svg>
+            )}
+          </button>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/** Anchor tabs above the content. The underline follows the section you are
+ *  actually looking at, so the bar doubles as a position indicator. */
+const BOX_SECTIONS = [
+  { id: 'about', label: 'Popis' },
+  { id: 'plans', label: 'Půdorysy a rozměry' },
+  { id: 'standards', label: 'Výbava & Standardy' },
+  { id: 'live-map', label: 'Lokalita' },
+] as const
+
+function SectionTabs() {
+  const [active, setActive] = useState<string>(BOX_SECTIONS[0].id)
+
+  useEffect(() => {
+    const onScroll = () => {
+      // The section whose top has last passed under the fixed header wins.
+      const line = 140
+      let current: string = BOX_SECTIONS[0].id
+      for (const s of BOX_SECTIONS) {
+        const el = document.getElementById(s.id)
+        if (el && el.getBoundingClientRect().top <= line) current = s.id
+      }
+      setActive(current)
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [])
+
+  return (
+    <nav className="bx-tabbar" aria-label="Sekce stránky">
+      {BOX_SECTIONS.map((s) => (
+        <a
+          key={s.id}
+          href={`#${s.id}`}
+          className={s.id === active ? 'active' : ''}
+          aria-current={s.id === active ? 'true' : undefined}
+        >
+          {s.label}
+        </a>
+      ))}
+    </nav>
+  )
+}
+
+/** Expandable standards list. One tab open at a time keeps the section short. */
+function StandardsAccordion() {
+  const [open, setOpen] = useState<string | null>(null)
+  return (
+    <div className="bx-acc">
+      {BOX_STANDARDS.map((cat) => {
+        const isOpen = open === cat.key
+        return (
+          <div className={`bx-acc-item${isOpen ? ' open' : ''}`} key={cat.key}>
+            <button
+              type="button"
+              className="bx-acc-head"
+              aria-expanded={isOpen}
+              aria-controls={`std-${cat.key}`}
+              onClick={() => setOpen(isOpen ? null : cat.key)}
+            >
+              <span>{cat.title}</span>
+              <span className="bx-acc-plus" aria-hidden>
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </span>
+            </button>
+            <div className="bx-acc-body" id={`std-${cat.key}`} role="region">
+              <ul>
+                {cat.items.map((it) => (
+                  <li key={it}>{it}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export function BoxDetail({ id }: { id: string }) {
   const { boxes, loading } = useBoxes()
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [reserving, setReserving] = useState(false)
-  const [mediaIdx, setMediaIdx] = useState(0)
-  const [lightbox, setLightbox] = useState(false)
-  const [floorTab, setFloorTab] = useState<'np1' | 'np2'>('np1')
+  const [floor, setFloor] = useState<'np1' | 'np2'>('np1')
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
@@ -1196,7 +1438,7 @@ export function BoxDetail({ id }: { id: string }) {
     return (
       <div className="box-detail-page">
         <Header scrolled menuOpen={menuOpen} setMenuOpen={setMenuOpen} linkBase="/" />
-        <main className="bd bd-loading">Načítám box…</main>
+        <main className="bx bx-loading">Načítám box…</main>
         <Footer />
       </div>
     )
@@ -1206,227 +1448,43 @@ export function BoxDetail({ id }: { id: string }) {
     return (
       <div className="box-detail-page">
         <Header scrolled menuOpen={menuOpen} setMenuOpen={setMenuOpen} linkBase="/" />
-        <main className="bd bd-notfound">
+        <main className="bx bx-notfound">
           <h1>Box nenalezen</h1>
           <p>Box „{id}" v nabídce neexistuje.</p>
-          <a href="/" className="bd-btn primary" onClick={goHome}>Zpět na nabídku boxů</a>
+          <a href="/" className="bx-btn primary" onClick={goHome}>Zpět na nabídku boxů</a>
         </main>
         <Footer />
       </div>
     )
   }
 
-  const available = box.status === 'volny'
-  const area = displayArea(box)
-  const price = displayPrice(box)
-
-  const specs: [string, string][] = [
-    ['Celková plocha', `${fmtM2(area)} m²`],
-    ['Cena', formatCzk(price)],
-    ['Dispozice', 'Dvoupodlažní — přízemí showroom, patro administrativa'],
-    ['Vhodné pro', 'Sklad · výroba · showroom · obchod'],
-    ['Stav', STATUS_LABEL[box.status]],
-  ]
-
-  const equipment = ['Energetická třída A', 'Klimatizace', 'Příprava na venkovní žaluzie', 'Denní světlo ve skladu ze světlíku']
-
   const plans = boxPlans(box.id)
   const rooms = boxRooms(box.id)
-  const media = [
-    { kind: 'plan', src: plans.np1, label: '1. NP' },
-    { kind: 'plan', src: plans.np2, label: '2. NP' },
-    { kind: 'aerial', src: BOX_MAP_IMAGE.src, label: 'Poloha' },
-  ]
-  const active = media[mediaIdx] ?? media[0]
-  const lightboxImages = media.map((m) =>
-    m.kind === 'aerial'
-      ? {
-          src: m.src,
-          alt: `Poloha boxu ${box.id} v areálu`,
-          render: (
-            <span className="lb-aerial">
-              <img src={BOX_MAP_IMAGE.src} alt={`Poloha boxu ${box.id} v areálu`} />
-              <svg
-                viewBox={`0 0 ${BOX_MAP_IMAGE.width} ${BOX_MAP_IMAGE.height}`}
-                preserveAspectRatio="xMidYMid meet"
-                className="lb-aerial-svg"
-                aria-hidden
-              >
-                {BOX_POLYGONS.map((p) => (
-                  <polygon
-                    key={p.id}
-                    points={p.points}
-                    className={`bd-poly${p.id === box.id ? ' active' : ''}`}
-                  />
-                ))}
-              </svg>
-            </span>
-          ),
-        }
-      : {
-          src: m.src,
-          alt: `Půdorys ${m.label} boxu ${box.id}`,
-          render: (
-            <span className="lb-plan">
-              <img src={m.src} alt={`Půdorys ${m.label} boxu ${box.id}`} />
-            </span>
-          ),
-        }
-  )
+  const planSrc = floor === 'np1' ? plans.np1 : plans.np2
+  const floorLabel = floor === 'np1' ? '1. NP' : '2. NP'
 
   return (
     <div className="box-detail-page">
-      <Header scrolled={scrolled} menuOpen={menuOpen} setMenuOpen={setMenuOpen} linkBase="/" />
+      {/* Logo goes white while the header sits over the photo, navy once scrolled. */}
+      <Header
+        scrolled={scrolled}
+        menuOpen={menuOpen}
+        setMenuOpen={setMenuOpen}
+        linkBase="/"
+        onDark={!scrolled}
+      />
 
-      <main className="bd">
-        <nav className="bd-crumb" aria-label="Drobečková navigace">
-          <a href="/#box-map" onClick={goHome}>Nabídka boxů</a>
-          <span aria-hidden>/</span>
-          <span className="bd-crumb-current">Box {box.id}</span>
-        </nav>
+      <BoxHero box={box} onReserve={() => setReserving(true)} />
 
-        <div className="bd-grid">
-          {/* Media — aerial with this box highlighted */}
-          <div className="bd-media">
-            <div className="bd-gallery">
-              <button
-                type="button"
-                className="bd-gallery-main"
-                onClick={() => setLightbox(true)}
-                aria-label="Zobrazit větší galerii"
-              >
-                {active.kind === 'aerial' ? (
-                  <div className="bd-map bd-map-fill">
-                    <img src={BOX_MAP_IMAGE.src} alt={`Poloha boxu ${box.id} v areálu`} draggable={false} />
-                    <svg
-                      viewBox={`0 0 ${BOX_MAP_IMAGE.width} ${BOX_MAP_IMAGE.height}`}
-                      preserveAspectRatio="xMidYMid meet"
-                      className="bd-map-svg"
-                      aria-hidden
-                    >
-                      {BOX_POLYGONS.map((p) => (
-                        <polygon
-                          key={p.id}
-                          points={p.points}
-                          className={`bd-poly${p.id === box.id ? ' active' : ''}`}
-                        />
-                      ))}
-                    </svg>
-                  </div>
-                ) : (
-                  <div className="bd-plan-main">
-                    <img src={active.src} alt={`Půdorys ${active.label} boxu ${box.id}`} />
-                    <span className="bd-plan-tag">{active.label}</span>
-                  </div>
-                )}
+      <main className="bx">
+        {/* Tabs and the first section share one group — 64px apart, not 145. */}
+        <div className="bx-intro">
+          <SectionTabs />
 
-                <span className="bd-zoom" aria-hidden>
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-                  </svg>
-                </span>
-              </button>
-
-              <div className="bd-thumbs">
-                {media.map((m, i) => (
-                  <button
-                    key={m.label}
-                    type="button"
-                    className={`bd-thumb${i === mediaIdx ? ' active' : ''}`}
-                    onClick={() => setMediaIdx(i)}
-                    aria-label={m.label}
-                    title={m.label}
-                  >
-                    <img
-                      src={m.src}
-                      alt=""
-                      className={m.kind === 'aerial' ? 'cover' : 'contain'}
-                    />
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {rooms && (
-            <section className="bd-rooms">
-              <div className="bd-rooms-head">
-                <h2>Legenda místností</h2>
-                <div className="bd-rooms-tabs" role="tablist">
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={floorTab === 'np1'}
-                    className={floorTab === 'np1' ? 'active' : ''}
-                    onClick={() => setFloorTab('np1')}
-                  >
-                    1. NP
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={floorTab === 'np2'}
-                    className={floorTab === 'np2' ? 'active' : ''}
-                    onClick={() => setFloorTab('np2')}
-                  >
-                    2. NP
-                  </button>
-                </div>
-              </div>
-              <RoomLegend rows={floorTab === 'np1' ? rooms.np1 : rooms.np2} />
-            </section>
-          )}
-
-          {/* Info panel */}
-          <aside className="bd-panel">
-            <div className="bd-eyebrow">Park24 · obchodně skladovací box</div>
-            <div className="bd-title-row">
-              <h1>Box {box.id}</h1>
-              <span className={`bd-status bd-status-${box.status}`}>
-                {available && <span className="dot" />}
-                {STATUS_LABEL[box.status]}
-              </span>
-            </div>
-            <div className="bd-price">{formatCzk(price)}</div>
-            <div className="bd-subprice">{fmtM2(area)} m² · {boxParking(box.id)}× parkování</div>
-
-            <dl className="bd-specs">
-              {specs.map(([k, v]) => (
-                <div className="bd-spec" key={k}>
-                  <dt>{k}</dt>
-                  <dd>{v}</dd>
-                </div>
-              ))}
-            </dl>
-
-            <div className="bd-actions">
-              <button
-                type="button"
-                className="bd-btn primary"
-                disabled={!available}
-                onClick={() => setReserving(true)}
-              >
-                {available ? 'Rezervovat box' : `Box ${STATUS_LABEL[box.status].toLowerCase()}`}
-                {available && (
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="3" y1="12" x2="21" y2="12" />
-                    <polyline points="14 5 21 12 14 19" />
-                  </svg>
-                )}
-              </button>
-              <button type="button" className="bd-btn ghost" onClick={() => generateBoxPdf(box)}>
-                <PdfIcon />
-                Stáhnout kartu (PDF)
-              </button>
-            </div>
-
-            <a href="/#box-map" className="bd-back" onClick={goHome}>← Zpět na nabídku boxů</a>
-          </aside>
-
-          {/* Text sections — under the photo, left column */}
-          <section className="bd-info">
-            <div className="bd-info-col">
-              <h2>O boxu</h2>
+          {/* ── O boxu ─────────────────────────────────────────────── */}
+          <section className="bx-block" id="about">
+            <h2 className="bx-h2">O boxu</h2>
+            <div className="bx-about">
               <p>Moderní prostor pro vaše podnikání v Lelekovicích u Brna.</p>
               <p>
                 Dvoupodlažní jednotka chytře kombinuje praktické zázemí v přízemí a reprezentativní
@@ -1435,30 +1493,95 @@ export function BoxDetail({ id }: { id: string }) {
                 s klienty.
               </p>
             </div>
-            <div className="bd-info-col">
-              <h2>Výbava</h2>
-              <ul className="bd-equip">
-                {equipment.map((e) => (
-                  <li key={e}>
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    {e}
-                  </li>
-                ))}
-              </ul>
+
+            <div className="bx-visuals">
+              <div className="bx-stats">
+                <div className="bx-stat">
+                  <img src="/assets/grid-02.svg" alt="" aria-hidden />
+                  <div>
+                    <div className="bx-stat-num">{fmtM2(displayArea(box))} m²</div>
+                    <div className="bx-stat-label">Podlahová plocha</div>
+                  </div>
+                </div>
+                <div className="bx-stat">
+                  <img src="/assets/car-01.svg" alt="" aria-hidden />
+                  <div>
+                    <div className="bx-stat-num">{boxParking(box.id)}x</div>
+                    <div className="bx-stat-label">Parkovací stání</div>
+                  </div>
+                </div>
+              </div>
+              <img
+                className="bx-photo"
+                src="/assets/gallery/g3.jpg"
+                alt="Letecký pohled na areál Park24 v Lelekovicích"
+                loading="lazy"
+              />
             </div>
-            <StandardsDownload />
           </section>
         </div>
+
+        {/* ── Půdorysy a rozměry ───────────────────────────────────── */}
+        <section className="bx-block bx-block-center" id="plans">
+          <h2 className="bx-h2">Půdorysy a rozměry</h2>
+
+          <div className="bx-plan-group">
+            {/* One control drives both the drawing and the legend, so they
+                can never end up showing different floors. */}
+            <div className="bx-tabs" role="tablist" aria-label="Podlaží">
+              {(['np1', 'np2'] as const).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  role="tab"
+                  aria-selected={floor === f}
+                  className={floor === f ? 'active' : ''}
+                  onClick={() => setFloor(f)}
+                >
+                  {f === 'np1' ? '1. NP' : '2. NP'}
+                </button>
+              ))}
+            </div>
+
+            {/* The drawing is ~3:1, so on phones it scrolls sideways at a
+                readable size instead of shrinking to a 110px-tall strip. */}
+            <div className="bx-plan-scroll">
+              <img
+                className="bx-plan"
+                src={planSrc}
+                alt={`Půdorys ${floorLabel} boxu ${box.id}`}
+              />
+            </div>
+
+            {rooms && <RoomLegend rows={floor === 'np1' ? rooms.np1 : rooms.np2} />}
+          </div>
+        </section>
+
+        {/* ── Výbava & Standardy ───────────────────────────────────── */}
+        <section className="bx-block" id="standards">
+          <h2 className="bx-h2">Výbava &amp; Standardy</h2>
+
+          <ul className="bx-equip">
+            {['Energetická třída A', 'Klimatizace', 'Příprava na venkovní žaluzie', 'Denní světlo ve skladu ze světlíku'].map((e) => (
+              <li key={e}>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                {e}
+              </li>
+            ))}
+          </ul>
+
+          <StandardsAccordion />
+          <StandardsDownload />
+        </section>
       </main>
 
+      <InteractiveMapContact />
+      <Ticker />
       <Footer />
 
       {reserving && <InquiryModal box={box} onClose={() => setReserving(false)} />}
-      {lightbox && (
-        <GalleryModal images={lightboxImages} start={mediaIdx} onClose={() => setLightbox(false)} />
-      )}
     </div>
   )
 }

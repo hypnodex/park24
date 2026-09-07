@@ -147,46 +147,65 @@
 }
 
 /* ─── Hero ─────────────────────────────────────────────────────── */
+/* Column layout so the headline can centre itself in the band between the top
+   of the page and the cards, whatever the viewport height. */
 .hero {
   position: relative;
   width: 100%;
   height: 100vh;
   overflow: hidden;
-  padding-bottom: clamp(40px, 4vw, 60px);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: clamp(32px, 4.5vw, 84px);
   margin-top: 0;
 }
+/* Still image doubles as the video poster and as the fallback when the video
+   can't play (reduced motion, decode failure, unsupported codec). */
 .hero-bg {
   position: absolute;
   inset: 0;
   z-index: 0;
   background: url('/assets/hero.jpg') center center / cover no-repeat;
 }
+.hero-video {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+/* Subtle scrim so the white headline and cards read over the video */
 .hero-bg::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06));
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.3);
 }
 .hero-title {
   position: relative;
   z-index: 1;
+  flex: 1;
+  display: grid;
+  place-items: center;
   width: min(1173px, 90vw);
-  margin: clamp(88px, 9vw, 156px) auto 0;
+  margin: 0 auto;
   text-align: center;
   font-family: var(--display);
   font-weight: 600;
   letter-spacing: -0.02em;
   font-size: clamp(42px, 6.5vw, 96px);
   line-height: 1.05;
-  color: var(--navy);
+  color: #fff;
 }
 
 .hero-boxes {
-  position: absolute;
+  position: relative;
   z-index: 1;
-  left: 0;
-  right: 0;
-  bottom: clamp(32px, 4.5vw, 84px);
+  flex: none;
   margin-inline: auto;
   width: min(1174px, calc(100% - 48px));
   display: grid;
@@ -312,6 +331,11 @@
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   padding: 0 var(--gutter);
+}
+/* Per-frame scrollLeft writes need snapping and smooth scrolling out of the way */
+.carousel.auto {
+  scroll-snap-type: none;
+  scroll-behavior: auto;
 }
 .carousel::-webkit-scrollbar {
   display: none;
@@ -2405,7 +2429,6 @@ textarea.field-input {
     padding-bottom: 24px;
   }
   .hero-title {
-    margin-top: clamp(120px, 22vh, 200px);
     font-size: clamp(32px, 10vw, 48px);
     text-align: center;
     width: calc(100% - 40px);
@@ -2413,7 +2436,6 @@ textarea.field-input {
   .hero-boxes {
     width: calc(100% - 40px);
     grid-template-columns: 1fr 1fr;
-    bottom: 24px;
   }
   .glass-card {
     min-height: 140px;
@@ -2577,87 +2599,306 @@ textarea.field-input {
 
 /* ═══════════════════════════════════════════════════════════════════
    Box detail page — /box/:id
+   Layout follows the Figma frame "subpage" (node 222:2423), designed at
+   1728px: full-bleed photo hero, then three 880px-wide blocks centred in
+   a 1400px column, 145px apart. Everything below scales down fluidly.
    ═══════════════════════════════════════════════════════════════════ */
 .box-detail-page {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--gray-2);
+  background: #fff;
 }
-.bd {
-  flex: 1;
+
+/* ─── Photo hero ──────────────────────────────────────────────── */
+.bx-hero {
+  position: relative;
   width: 100%;
-  max-width: var(--max-w);
-  margin: 0 auto;
-  padding: clamp(96px, 12vh, 138px) var(--gutter) clamp(56px, 8vw, 104px);
-}
-
-.bd-crumb {
+  height: clamp(300px, 22.6vw, 391px);
+  overflow: hidden;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--body);
-  font-size: 14px;
-  color: rgba(31, 43, 94, 0.5);
-  margin-bottom: clamp(20px, 3vw, 36px);
+  align-items: flex-end;
 }
-.bd-crumb a {
-  color: rgba(31, 43, 94, 0.6);
-  text-decoration: none;
+.bx-hero-bg {
+  position: absolute;
+  inset: 0;
+  background: url('/assets/gallery/g5.jpg') center 58% / cover no-repeat;
 }
-.bd-crumb a:hover {
-  color: var(--pink);
+/* Scrim from the design: the Figma fill stacks four 20% black layers on the
+   photo, which composites to 1 − 0.8⁴ ≈ 59% black. */
+.bx-hero-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5904);
 }
-.bd-crumb-current {
-  color: var(--navy);
-  font-weight: 600;
-}
-
-.bd-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(320px, 1fr);
-  grid-template-areas:
-    "media panel"
-    "rooms panel"
-    "info  panel";
-  column-gap: clamp(24px, 3.5vw, 56px);
-  row-gap: clamp(24px, 3vw, 40px);
-  align-items: start;
-}
-.bd-media {
-  grid-area: media;
-}
-.bd-panel {
-  grid-area: panel;
-}
-.bd-info {
-  grid-area: info;
-}
-.bd-rooms {
-  grid-area: rooms;
-}
-.bd-rooms-head {
+.bx-hero-body {
+  position: relative;
+  z-index: 1;
+  width: 100%;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: clamp(12px, 1.5vw, 18px);
+  gap: clamp(24px, 4vw, 64px);
+  padding: 0 clamp(20px, 9vw, 156px) clamp(24px, 1.8vw, 30px);
 }
-.bd-rooms-head h2 {
+.bx-hero-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+.bx-hero-title {
+  margin: 12px 0 12px;
   font-family: var(--display);
   font-weight: 600;
-  font-size: clamp(18px, 1.8vw, 24px);
-  color: var(--navy);
-  margin: 0;
+  font-size: clamp(44px, 5.6vw, 96px);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: #fff;
 }
-.bd-rooms-tabs {
+.bx-hero-price {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(24px, 2vw, 34px);
+  color: #fff;
+}
+.bx-hero-sub {
+  margin-top: 3px;
+  font-family: var(--body);
+  font-size: clamp(13px, 0.9vw, 15px);
+  color: rgba(255, 255, 255, 0.72);
+}
+.bx-hero-actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 10px;
+  width: min(471px, 100%);
+  padding-bottom: 4px;
+}
+.bx-hero-actions .bx-btn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.bx-status {
   display: inline-flex;
-  padding: 4px;
-  gap: 4px;
-  background: rgba(31, 43, 94, 0.06);
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
   border-radius: 999px;
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
 }
-.bd-rooms-tabs button {
+.bx-status .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.bx-status-volny {
+  background: var(--green-bg);
+  color: var(--green);
+}
+.bx-status-rezervovano {
+  background: rgb(254, 243, 199);
+  color: rgb(180, 83, 9);
+}
+.bx-status-prodano {
+  background: rgb(254, 226, 226);
+  color: rgb(185, 28, 28);
+}
+
+/* ─── Buttons ─────────────────────────────────────────────────── */
+.bx-btn {
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 22px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.bx-btn.primary {
+  background: var(--pink);
+  color: #fff;
+}
+.bx-btn.primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(255, 0, 102, 0.32);
+}
+.bx-btn.primary:disabled {
+  background: rgba(31, 43, 94, 0.18);
+  cursor: not-allowed;
+}
+.bx-btn.ghost {
+  background: #fff;
+  border-color: rgba(31, 43, 94, 0.14);
+  color: var(--navy);
+}
+.bx-btn.ghost:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(31, 43, 94, 0.14);
+}
+
+/* ─── Page body ───────────────────────────────────────────────── */
+.bx {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(64px, 8.4vw, 145px);
+  padding: clamp(64px, 8.4vw, 145px) var(--gutter);
+}
+/* Tab bar sits 64px above the first section, not the usual 145px */
+.bx-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 64px;
+}
+.bx-tabbar {
+  width: 100%;
+  max-width: 880px;
+  margin-inline: auto;
+  display: flex;
+  border-bottom: 1px solid #edeef2;
+}
+.bx-tabbar a {
+  flex: none;
+  padding: 16px 24px;
+  /* pulls the tab's own rule onto the bar's hairline */
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 20px;
+  line-height: 1.56;
+  letter-spacing: 0.01em;
+  color: var(--navy);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color 0.2s ease, opacity 0.15s ease;
+}
+.bx-tabbar a:hover {
+  opacity: 0.7;
+}
+.bx-tabbar a.active {
+  border-bottom-color: var(--pink);
+}
+
+.bx-block {
+  width: 100%;
+  max-width: 880px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.bx-block-center {
+  align-items: center;
+}
+.bx-h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(30px, 2.8vw, 48px);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: var(--navy);
+}
+.bx-about {
+  display: flex;
+  flex-direction: column;
+  padding-top: 14px;
+}
+.bx-about p {
+  margin: 0;
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 27.2px;
+  color: rgba(31, 43, 94, 0.7);
+}
+
+/* ─── Stat cards + photo ──────────────────────────────────────── */
+.bx-visuals {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bx-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.bx-stat {
+  height: clamp(190px, 14.4vw, 248px);
+  padding: clamp(22px, 1.9vw, 32px);
+  border-radius: 16px;
+  background: var(--navy);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  overflow: hidden;
+}
+.bx-stat img {
+  width: 40px;
+  height: 40px;
+  display: block;
+}
+.bx-stat-num {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(40px, 4.2vw, 72px);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+.bx-stat-label {
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 16px;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.56);
+}
+.bx-photo {
+  width: 100%;
+  height: clamp(240px, 25.4vw, 439px);
+  object-fit: cover;
+  border-radius: 16px;
+  display: block;
+}
+
+/* ─── Floor plans ─────────────────────────────────────────────── */
+.bx-plan-group {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(32px, 3.7vw, 64px);
+}
+.bx-tabs {
+  width: 340px;
+  max-width: 100%;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(31, 43, 94, 0.06);
+}
+.bx-tabs button {
+  flex: 1 1 0;
+  height: 31px;
   padding: 7px 20px;
   border: none;
   border-radius: 999px;
@@ -2669,430 +2910,249 @@ textarea.field-input {
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
-.bd-rooms-tabs button.active {
+.bx-tabs button.active {
   background: var(--navy);
   color: #fff;
 }
-.bd-room-table {
-  border: 1px solid rgba(31, 43, 94, 0.12);
+.bx-plan-scroll {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+/* The drawing is wider than the 880px text column and stays centred on the
+   page, so it needs to escape the global `img { max-width: 100% }` rule. */
+.bx-plan {
+  width: min(1134px, 100vw - 2 * var(--gutter));
+  max-width: none;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+
+/* ─── Room legend table ───────────────────────────────────────── */
+.bx-table {
+  width: 100%;
   border-radius: 14px;
   overflow: hidden;
 }
-.bd-room-table table {
+.bx-table table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
   font-family: var(--body);
-  font-size: clamp(12px, 1vw, 14px);
+  font-size: 14px;
   color: var(--navy);
 }
-.bd-room-table th,
-.bd-room-table td {
+.bx-table col.bx-col-code {
+  width: 70px;
+}
+.bx-table th,
+.bx-table td {
+  height: 41px;
   padding: 9px 14px;
   text-align: left;
-  border-bottom: 1px solid rgba(31, 43, 94, 0.08);
+  vertical-align: middle;
 }
-.bd-room-table thead th {
+.bx-table thead th {
   font-weight: 600;
   color: rgba(31, 43, 94, 0.6);
-  background: rgba(31, 43, 94, 0.03);
 }
-.bd-room-table td.code {
-  font-variant-numeric: tabular-nums;
-  color: rgba(31, 43, 94, 0.6);
-  white-space: nowrap;
-}
-.bd-room-table .num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.bd-room-table tfoot td {
-  font-weight: 700;
-  border-bottom: none;
-  background: rgba(31, 43, 94, 0.04);
-}
-@media (max-width: 768px) {
-  .bd-rooms-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Media — aerial with the box highlighted */
-.bd-map {
-  position: relative;
-  border-radius: 18px;
-  overflow: hidden;
-  background: var(--gray);
-  box-shadow: 0 18px 50px rgba(31, 43, 94, 0.12);
-}
-.bd-gallery {
-  position: relative;
-}
-.bd-gallery-main {
-  display: block;
-  position: relative;
-  padding: 0;
-  border: none;
-  border-radius: 18px;
-  overflow: hidden;
-  background: #fff;
-  box-shadow: 0 18px 50px rgba(31, 43, 94, 0.12);
-  aspect-ratio: 1024 / 571;
-  width: 100%;
-  cursor: zoom-in;
-}
-.bd-zoom {
-  position: absolute;
-  top: clamp(12px, 1.4vw, 18px);
-  right: clamp(12px, 1.4vw, 18px);
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.85);
-  color: var(--navy, #1f2b5e);
-  box-shadow: 0 4px 14px rgba(31, 43, 94, 0.2);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  opacity: 0.85;
-  transition: opacity 0.15s ease;
-}
-.bd-gallery-main:hover .bd-zoom {
-  opacity: 1;
-}
-.bd-plan-main {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: clamp(20px, 3vw, 44px);
-  background: #fff;
-}
-.bd-plan-main img {
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-}
-.bd-plan-tag {
-  position: absolute;
-  left: clamp(14px, 1.6vw, 22px);
-  top: clamp(14px, 1.6vw, 22px);
-  padding: 5px 15px;
-  border-radius: 999px;
-  background: var(--navy, #1f2b5e);
-  color: #fff;
-  font-family: var(--body);
-  font-weight: 600;
-  font-size: 13px;
-  letter-spacing: 0.02em;
-}
-.bd-map-fill {
-  position: absolute;
-  inset: 0;
-  border-radius: 0;
-  box-shadow: none;
-}
-.bd-map-fill img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.bd-thumbs {
-  position: absolute;
-  right: clamp(10px, 1.2vw, 16px);
-  bottom: clamp(10px, 1.2vw, 16px);
-  z-index: 2;
-  display: flex;
-  gap: 8px;
-}
-.bd-thumb {
-  width: clamp(48px, 5vw, 66px);
-  height: clamp(48px, 5vw, 66px);
-  padding: 0;
-  border-radius: 12px;
-  overflow: hidden;
-  cursor: pointer;
-  background: #fff;
-  border: 2px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 0 6px 18px rgba(31, 43, 94, 0.28);
-  transition: border-color 0.15s ease, transform 0.15s ease;
-}
-.bd-thumb:hover {
-  transform: translateY(-2px);
-}
-.bd-thumb.active {
-  border-color: var(--navy, #1f2b5e);
-}
-.bd-thumb img {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-.bd-thumb img.cover {
-  object-fit: cover;
-}
-.bd-thumb img.contain {
-  object-fit: contain;
-  padding: 5px;
-}
-.bd-map img {
-  display: block;
-  width: 100%;
-  height: auto;
-  user-select: none;
-}
-.bd-map-svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-.bd-poly {
-  fill: rgba(31, 43, 94, 0.05);
-  stroke: rgba(255, 255, 255, 0.28);
-  stroke-width: 1;
-  transition: fill 0.2s ease;
-}
-.bd-poly.active {
-  fill: rgba(255, 0, 102, 0.28);
-  stroke: var(--pink);
-  stroke-width: 2.5;
-  stroke-linejoin: round;
-}
-
-/* Info panel */
-.bd-panel {
-  position: sticky;
-  top: 100px;
-  background: #fff;
-  border: 1px solid rgba(31, 43, 94, 0.08);
-  border-radius: 18px;
-  padding: clamp(22px, 2.6vw, 34px);
-  box-shadow: 0 14px 44px rgba(31, 43, 94, 0.07);
-}
-.bd-eyebrow {
-  font-family: var(--body);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--pink);
-}
-.bd-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 10px 0 2px;
-}
-.bd-title-row h1 {
-  margin: 0;
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: clamp(32px, 3.6vw, 50px);
-  line-height: 1;
-  letter-spacing: -0.02em;
-  color: var(--navy);
-}
-.bd-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  height: 30px;
-  padding: 0 13px;
-  border-radius: 999px;
-  font-family: var(--body);
-  font-weight: 600;
-  font-size: 13px;
-  white-space: nowrap;
-}
-.bd-status .dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.bd-status-volny {
-  background: var(--green-bg);
-  color: var(--green);
-}
-.bd-status-rezervovano {
-  background: rgb(254, 222, 217);
-  color: rgb(192, 63, 88);
-}
-.bd-status-prodano {
-  background: rgb(251, 219, 219);
-  color: rgb(179, 58, 58);
-}
-.bd-price {
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: clamp(26px, 3vw, 34px);
-  color: var(--navy);
-  margin-top: 14px;
-}
-.bd-subprice {
-  font-family: var(--body);
-  font-size: 15px;
-  color: rgba(31, 43, 94, 0.5);
-  margin-top: 3px;
-}
-
-.bd-specs {
-  margin: clamp(20px, 3vw, 28px) 0 clamp(18px, 2.4vw, 24px);
-}
-.bd-spec {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 16px;
-  padding: 12px 0;
+.bx-table tbody tr,
+.bx-table tfoot tr {
   border-top: 1px solid rgba(31, 43, 94, 0.08);
 }
-.bd-spec dt {
-  font-family: var(--body);
-  font-size: 14px;
-  color: rgba(31, 43, 94, 0.55);
+.bx-table td.code {
+  font-variant-numeric: tabular-nums;
+  color: rgba(31, 43, 94, 0.6);
+  white-space: nowrap;
 }
-.bd-spec dd {
-  margin: 0;
-  font-family: var(--body);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--navy);
+.bx-table .num {
   text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-
-.bd-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.bd-btn {
-  height: 52px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border-radius: 12px;
-  border: 1px solid transparent;
-  font-family: var(--body);
-  font-weight: 600;
-  font-size: 15px;
-  cursor: pointer;
-  transition: filter 0.15s ease, border-color 0.15s ease, color 0.15s ease,
-    box-shadow 0.15s ease, background 0.15s ease;
-}
-.bd-btn.primary {
-  background: var(--pink);
-  color: #fff;
-  box-shadow: 0 10px 26px rgba(255, 0, 102, 0.26);
-}
-.bd-btn.primary:hover {
-  filter: brightness(1.06);
-}
-.bd-btn.primary:disabled {
-  background: rgba(31, 43, 94, 0.1);
-  color: rgba(31, 43, 94, 0.45);
-  box-shadow: none;
-  cursor: not-allowed;
-}
-.bd-btn.ghost {
-  background: #fff;
-  border-color: rgba(31, 43, 94, 0.14);
-  color: var(--navy);
-}
-.bd-btn.ghost:hover {
-  border-color: var(--pink);
-  color: var(--pink);
-}
-.bd-back {
-  display: inline-block;
-  margin-top: 16px;
-  font-family: var(--body);
-  font-size: 14px;
-  color: rgba(31, 43, 94, 0.55);
-  text-decoration: none;
-}
-.bd-back:hover {
-  color: var(--pink);
-}
-
-/* Text sections stacked under the photo */
-.bd-info {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(22px, 3vw, 32px);
-}
-.bd-info h2 {
-  margin: 0 0 14px;
-  font-family: var(--display);
+.bx-table tfoot td {
+  height: 40px;
   font-weight: 700;
-  font-size: clamp(22px, 2.4vw, 30px);
-  color: var(--navy);
 }
-.bd-info p {
-  margin: 0;
-  font-family: var(--body);
-  font-size: 16px;
-  line-height: 1.7;
-  color: rgba(31, 43, 94, 0.7);
-}
-.bd-equip {
+
+/* ─── Equipment list ──────────────────────────────────────────── */
+.bx-equip {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
   gap: 12px;
 }
-.bd-equip li {
+.bx-equip li {
   display: flex;
   align-items: center;
   gap: 10px;
   font-family: var(--body);
   font-weight: 500;
+  font-size: 16px;
   color: var(--navy);
 }
-.bd-equip svg {
+.bx-equip svg {
   color: var(--green);
   flex: none;
 }
 
-/* States */
-.bd-loading,
-.bd-notfound {
+/* ─── Standards accordion ─────────────────────────────────────── */
+.bx-acc {
+  display: flex;
+  flex-direction: column;
+}
+.bx-acc-item {
+  border-bottom: 1px solid rgba(31, 43, 94, 0.08);
+}
+.bx-acc-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: clamp(17px, 1.2vw, 20px);
+  line-height: 1.56;
+  letter-spacing: 0.01em;
+  color: var(--navy);
+}
+.bx-acc-head span:first-child {
+  flex: 1 1 auto;
+}
+.bx-acc-plus {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  color: var(--navy);
+  transition: transform 0.25s ease, color 0.15s ease;
+}
+.bx-acc-item.open .bx-acc-plus {
+  transform: rotate(45deg);
+  color: var(--pink);
+}
+/* 0fr → 1fr keeps the panel in the DOM so it animates and stays searchable */
+.bx-acc-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.bx-acc-item.open .bx-acc-body {
+  grid-template-rows: 1fr;
+}
+.bx-acc-body ul {
+  overflow: hidden;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.bx-acc-item.open .bx-acc-body ul {
+  padding: 2px 0 22px;
+}
+.bx-acc-body li {
+  position: relative;
+  padding-left: 20px;
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(31, 43, 94, 0.72);
+}
+.bx-acc-body li::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 10px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--pink);
+}
+
+/* ─── States ──────────────────────────────────────────────────── */
+.bx-loading,
+.bx-notfound {
   text-align: center;
   padding: clamp(120px, 22vh, 240px) var(--gutter);
   font-family: var(--body);
   color: rgba(31, 43, 94, 0.6);
 }
-.bd-notfound h1 {
+.bx-notfound h1 {
   font-family: var(--display);
   color: var(--navy);
   margin: 0 0 10px;
 }
-.bd-notfound .bd-btn {
-  display: inline-flex;
+.bx-notfound .bx-btn {
   margin-top: 22px;
-  padding: 0 22px;
-  text-decoration: none;
 }
 
-@media (max-width: 1024px) {
-  .bd-grid {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "media"
-      "panel"
-      "rooms"
-      "info";
+@media (max-width: 900px) {
+  .bx-hero {
+    height: auto;
+    min-height: 380px;
+    padding-top: 96px;
   }
-  .bd-panel {
-    position: static;
+  .bx-hero-body {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 22px;
+  }
+  .bx-hero-actions {
+    width: 100%;
+  }
+  .bx-stats {
+    grid-template-columns: 1fr;
+  }
+  /* Four 20px labels don't fit on a phone — let the bar scroll sideways */
+  .bx-tabbar {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .bx-tabbar::-webkit-scrollbar {
+    display: none;
+  }
+  .bx-tabbar a {
+    padding: 14px 16px;
+    font-size: 17px;
+  }
+  /* Keep the floor plan legible instead of squeezing it into the column */
+  .bx-plan-scroll {
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .bx-plan {
+    width: 760px;
+    flex: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .bx-hero-actions {
+    flex-direction: column;
+  }
+  /* `flex: 1 1 0` would set the basis on the block axis here and collapse
+     the buttons to their text height. */
+  .bx-hero-actions .bx-btn {
+    flex: 0 0 auto;
+  }
+  .bx-table {
+    font-size: 13px;
+  }
+  .bx-table th,
+  .bx-table td {
+    padding: 9px 8px;
+  }
+  .bx-table col.bx-col-code {
+    width: 52px;
   }
 }
