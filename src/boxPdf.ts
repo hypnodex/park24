@@ -2,7 +2,7 @@ import { formatCzk, type Box } from './store'
 import { boxRooms, boxPlans, boxTotalArea, boxComputedPrice, boxParking, type Room } from './boxRooms'
 
 /**
- * Generates the one-page A4 landscape "box card" PDF and triggers a download.
+ * Generates the one-page A4 landscape "box card" PDF and opens it in a new tab.
  *
  * Layout follows the Figma frame "A4 - 1" (node 223:3618), designed at
  * 1689×1194 — exactly A4 landscape. Left sidebar carries the logo, price and
@@ -14,28 +14,66 @@ import { boxRooms, boxPlans, boxTotalArea, boxComputedPrice, boxParking, type Ro
  * font can. Not selectable text, but reliable and pixel-accurate.
  */
 export async function generateBoxPdf(box: Box): Promise<void> {
-  const scale = 2
-  const canvas = document.createElement('canvas')
-  canvas.width = W * scale
-  canvas.height = H * scale
-  const ctx = canvas.getContext('2d')!
-  ctx.scale(scale, scale)
+  // Opened synchronously, while the click is still the "user gesture", so the
+  // popup blocker lets it through — everything below this line is async.
+  const win = window.open('', '_blank')
+  if (win) win.document.write(LOADING_HTML)
 
-  await ensureFonts()
+  try {
+    const scale = 2
+    const canvas = document.createElement('canvas')
+    canvas.width = W * scale
+    canvas.height = H * scale
+    const ctx = canvas.getContext('2d')!
+    ctx.scale(scale, scale)
 
-  ctx.fillStyle = '#ffffff'
-  ctx.fillRect(0, 0, W, H)
+    await ensureFonts()
 
-  await drawSidebar(ctx, box)
-  await drawPlans(ctx, box)
-  await drawPhotos(ctx)
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, W, H)
 
-  const img = canvas.toDataURL('image/jpeg', 0.92)
-  const { jsPDF } = await import('jspdf') // lazy: keeps jsPDF out of the initial bundle
-  const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' })
-  pdf.addImage(img, 'JPEG', 0, 0, 297, 210)
-  pdf.save(`Park24-Box-${box.id}.pdf`)
+    await drawSidebar(ctx, box)
+    await drawPlans(ctx, box)
+    await drawPhotos(ctx)
+
+    const img = canvas.toDataURL('image/jpeg', 0.92)
+    const { jsPDF } = await import('jspdf') // lazy: keeps jsPDF out of the initial bundle
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' })
+    pdf.addImage(img, 'JPEG', 0, 0, 297, 210)
+    // Viewers show the document title in the tab, which a blob URL can't carry.
+    pdf.setProperties({ title: `Park24 — Box ${box.id}`, subject: `Karta boxu ${box.id}` })
+
+    // Free the previous card before minting a new one; the current blob has to
+    // stay alive for as long as its tab is open, so it is not revoked here.
+    if (lastBlobUrl) URL.revokeObjectURL(lastBlobUrl)
+    lastBlobUrl = URL.createObjectURL(pdf.output('blob'))
+
+    if (win) {
+      win.location.href = lastBlobUrl
+      return
+    }
+    // The pre-opened tab was blocked. Trying again outside a gesture usually
+    // fails too, so fall back to saving the file rather than doing nothing.
+    if (!window.open(lastBlobUrl, '_blank', 'noopener')) {
+      const a = document.createElement('a')
+      a.href = lastBlobUrl
+      a.download = `Park24-Box-${box.id}.pdf`
+      a.click()
+    }
+  } catch (err) {
+    win?.close() // don't strand the tab on the loading placeholder
+    throw err
+  }
 }
+
+let lastBlobUrl: string | null = null
+
+/** Placeholder shown in the new tab while the card is being drawn. */
+const LOADING_HTML =
+  '<!doctype html><meta charset="utf-8"><title>Park24 — karta boxu</title>' +
+  '<body style="margin:0;display:grid;place-items:center;height:100vh;' +
+  'font:500 15px Roboto,system-ui,sans-serif;color:#1f2b5e;background:#f2f3f6">' +
+  'Připravuji kartu boxu…</body>'
 
 /* ─── Design tokens (Figma frame 223:3618) ──────────────────────────────── */
 const W = 1689

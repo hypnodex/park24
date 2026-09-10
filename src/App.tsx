@@ -484,13 +484,12 @@ function Features() {
   )
 }
 
-/** Download panel for the box-standards PDF (used on box detail pages). */
+/** Panel linking to the box-standards PDF; opens in a new tab. */
 function StandardsDownload() {
   return (
     <a
       className="std-download"
       href="/assets/Park24-standardy-boxu.pdf"
-      download
       target="_blank"
       rel="noopener"
     >
@@ -498,18 +497,18 @@ function StandardsDownload() {
         <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
           <polyline points="14 2 14 8 20 8" />
-          <line x1="12" y1="18" x2="12" y2="12" />
-          <polyline points="9 15 12 18 15 15" />
+          <path d="M9 17l6-6" />
+          <polyline points="11 11 15 11 15 15" />
         </svg>
       </div>
       <div className="std-download-text">
-        <div className="std-download-title">Standardy boxu ke stažení</div>
+        <div className="std-download-title">Standardy boxu</div>
         <div className="std-download-sub">
           Co všechno je v ceně a z čeho je hala postavena — kompletní přehled v PDF.
         </div>
       </div>
       <span className="std-download-cta">
-        Stáhnout PDF
+        Otevřít PDF
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="3" y1="12" x2="21" y2="12" />
           <polyline points="14 5 21 12 14 19" />
@@ -587,8 +586,8 @@ function BoxList({ boxes }: { boxes: Box[] }) {
             <button
               type="button"
               className="bs-pdf"
-              aria-label={`Stáhnout kartu boxu ${b.id} v PDF`}
-              title="Stáhnout kartu (PDF)"
+              aria-label={`Otevřít kartu boxu ${b.id} v PDF`}
+              title="Otevřít kartu (PDF)"
               onClick={(e) => {
                 e.stopPropagation()
                 generateBoxPdf(b)
@@ -1293,7 +1292,7 @@ function BoxHero({ box, onReserve }: { box: Box; onReserve: () => void }) {
         <div className="bx-hero-actions">
           <button type="button" className="bx-btn ghost" onClick={() => generateBoxPdf(box)}>
             <PdfIcon />
-            Stáhnout kartu (PDF)
+            Otevřít kartu (PDF)
           </button>
           <button
             type="button"
