@@ -239,7 +239,7 @@ async function drawContact(ctx: CanvasRenderingContext2D) {
   ctx.fillText('E.', PAD + 1, top + 160)
   ctx.fillText('mensik@stemfire.cz', PAD + 27, top + 160)
 
-  const avatar = await loadImage('/assets/avatar.jpg').catch(() => null)
+  const avatar = await loadImage('/assets/avatar.png').catch(() => null)
   if (avatar) {
     const size = 64
     const ax = 394
