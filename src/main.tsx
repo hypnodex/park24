@@ -10,6 +10,7 @@ import { navigate, usePath } from './router.ts'
  *   /          → public marketing site (App)
  *   /homepage2 → test copy of the homepage for trying out design variants
  *                (currently: the "drawings" PDF card for box A1)
+ *   /homepage2/box/:id → box detail inside that test copy
  *   /box/:id   → single box detail page (BoxDetail)
  *   /admin     → password-gated admin (Admin)
  *
@@ -32,13 +33,15 @@ function currentBoxId(id: string): string {
 function Root() {
   const path = usePath()
 
-  const box = path.match(/^\/box\/([^/]+)\/?$/)
-  const rawId = box ? decodeURIComponent(box[1]) : null
+  // /box/:id on the real site, /homepage2/box/:id inside the test copy
+  const box = path.match(/^(\/homepage2)?\/box\/([^/]+)\/?$/)
+  const base = box?.[1] ?? ''
+  const rawId = box ? decodeURIComponent(box[2]) : null
   const boxId = rawId === null ? null : currentBoxId(rawId)
 
   useEffect(() => {
-    if (rawId !== null && boxId !== null && boxId !== rawId) navigate(`/box/${boxId}`)
-  }, [rawId, boxId])
+    if (rawId !== null && boxId !== null && boxId !== rawId) navigate(`${base}/box/${boxId}`)
+  }, [rawId, boxId, base])
 
   let page: ReactNode
   let key: string
@@ -46,11 +49,13 @@ function Root() {
     page = <Admin />
     key = 'admin'
   } else if (/^\/homepage2\/?$/.test(path)) {
-    page = <App cardVariant="drawings" />
+    page = <App cardVariant="drawings" base="/homepage2" />
     key = 'homepage2'
   } else if (boxId !== null) {
-    page = <BoxDetail id={boxId} />
-    key = `box:${boxId}`
+    page = base
+      ? <BoxDetail id={boxId} cardVariant="drawings" base={base} />
+      : <BoxDetail id={boxId} />
+    key = `box:${base}:${boxId}`
   } else {
     page = <App />
     key = 'home'

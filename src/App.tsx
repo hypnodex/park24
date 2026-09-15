@@ -26,7 +26,7 @@ function usePrefersReducedMotion(): boolean {
 /*  Main App                                                                   */
 /* ────────────────────────────────────────────────────────────────────────── */
 
-export default function App({ cardVariant = 'standard' }: { cardVariant?: BoxCardVariant }) {
+export default function App({ cardVariant = 'standard', base = '' }: { cardVariant?: BoxCardVariant; base?: string }) {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -46,7 +46,7 @@ export default function App({ cardVariant = 'standard' }: { cardVariant?: BoxCar
   }, [])
 
   return (
-    <CardVariantContext.Provider value={cardVariant}>
+    <HomeVariantContext.Provider value={{ cardVariant, base }}>
       {/* White wordmark while the header floats over the hero video */}
       <Header scrolled={scrolled} menuOpen={menuOpen} setMenuOpen={setMenuOpen} onDark={!scrolled} />
       <Hero />
@@ -59,17 +59,21 @@ export default function App({ cardVariant = 'standard' }: { cardVariant?: BoxCar
       <InteractiveMapContact />
       <Ticker />
       <Footer />
-    </CardVariantContext.Provider>
+    </HomeVariantContext.Provider>
   )
 }
 
-/** Which PDF card the homepage box list opens. /homepage2 tests the
- *  "drawings" layout; the real homepage keeps the standard card. */
-const CardVariantContext = createContext<BoxCardVariant>('standard')
+/** Which PDF card the homepage opens and under which URL prefix it lives.
+ *  /homepage2 tests the "drawings" layout and keeps its box pages under
+ *  /homepage2/box/:id; the real homepage keeps the standard card. */
+const HomeVariantContext = createContext<{ cardVariant: BoxCardVariant; base: string }>({
+  cardVariant: 'standard',
+  base: '',
+})
 
-/** Navigate to a box's detail page. */
-function openBox(id: string) {
-  navigate(`/box/${encodeURIComponent(id)}`)
+/** Navigate to a box's detail page, staying inside the current homepage copy. */
+function openBox(id: string, base = '') {
+  navigate(`${base}/box/${encodeURIComponent(id)}`)
 }
 
 /** Public display area/price — real summed area + computed price (parking incl.),
@@ -560,7 +564,7 @@ const PdfIcon = () => (
 )
 
 function BoxList({ boxes }: { boxes: Box[] }) {
-  const cardVariant = useContext(CardVariantContext)
+  const { cardVariant, base } = useContext(HomeVariantContext)
   return (
     <ul className="bs-list">
       {boxes.map((b) => {
@@ -571,11 +575,11 @@ function BoxList({ boxes }: { boxes: Box[] }) {
             tabIndex={0}
             role="button"
             title={`Box ${b.id} — zobrazit detail`}
-            onClick={() => openBox(b.id)}
+            onClick={() => openBox(b.id, base)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
-                openBox(b.id)
+                openBox(b.id, base)
               }
             }}
           >
@@ -648,6 +652,7 @@ function polygonTopCenter(points: string): { x: number; y: number } {
 }
 
 function BoxMap() {
+  const { base } = useContext(HomeVariantContext)
   const { boxes } = useBoxes()
   const byId = useMemo(() => new Map(boxes.map((b) => [b.id, b])), [boxes])
 
@@ -698,11 +703,11 @@ function BoxMap() {
                   role="button"
                   tabIndex={0}
                   aria-label={`${tooltip} – zobrazit detail`}
-                  onClick={() => openBox(poly.id)}
+                  onClick={() => openBox(poly.id, base)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault()
-                      openBox(poly.id)
+                      openBox(poly.id, base)
                     }
                   }}
                 >
@@ -1274,7 +1279,15 @@ function RoomLegend({ rows }: { rows: Room[] }) {
 }
 
 /** Full-bleed photo header: status, box name, price and the two actions. */
-function BoxHero({ box, onReserve }: { box: Box; onReserve: () => void }) {
+function BoxHero({
+  box,
+  onReserve,
+  cardVariant,
+}: {
+  box: Box
+  onReserve: () => void
+  cardVariant: BoxCardVariant
+}) {
   const available = box.status === 'volny'
   return (
     <section className="bx-hero" id="top">
@@ -1293,7 +1306,7 @@ function BoxHero({ box, onReserve }: { box: Box; onReserve: () => void }) {
         </div>
 
         <div className="bx-hero-actions">
-          <button type="button" className="bx-btn ghost" onClick={() => generateBoxPdf(box)}>
+          <button type="button" className="bx-btn ghost" onClick={() => generateBoxPdf(box, cardVariant)}>
             <PdfIcon />
             Otevřít kartu (PDF)
           </button>
@@ -1403,7 +1416,18 @@ function StandardsAccordion() {
   )
 }
 
-export function BoxDetail({ id }: { id: string }) {
+export function BoxDetail({
+  id,
+  cardVariant = 'standard',
+  base = '',
+}: {
+  id: string
+  /** PDF card layout; /homepage2/box/:id passes "drawings". */
+  cardVariant?: BoxCardVariant
+  /** URL prefix of the homepage copy this page belongs to ('' = real site). */
+  base?: string
+}) {
+  const home = base || '/'
   const { boxes, loading } = useBoxes()
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -1431,12 +1455,12 @@ export function BoxDetail({ id }: { id: string }) {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior })
   }, [id])
 
-  const goHome = (e: React.MouseEvent) => { e.preventDefault(); navigate('/') }
+  const goHome = (e: React.MouseEvent) => { e.preventDefault(); navigate(home) }
 
   if (loading && !box) {
     return (
       <div className="box-detail-page">
-        <Header scrolled menuOpen={menuOpen} setMenuOpen={setMenuOpen} linkBase="/" />
+        <Header scrolled menuOpen={menuOpen} setMenuOpen={setMenuOpen} linkBase={home} />
         <main className="bx bx-loading">Načítám box…</main>
         <Footer />
       </div>
@@ -1446,11 +1470,11 @@ export function BoxDetail({ id }: { id: string }) {
   if (!box) {
     return (
       <div className="box-detail-page">
-        <Header scrolled menuOpen={menuOpen} setMenuOpen={setMenuOpen} linkBase="/" />
+        <Header scrolled menuOpen={menuOpen} setMenuOpen={setMenuOpen} linkBase={home} />
         <main className="bx bx-notfound">
           <h1>Box nenalezen</h1>
           <p>Box „{id}" v nabídce neexistuje.</p>
-          <a href="/" className="bx-btn primary" onClick={goHome}>Zpět na nabídku boxů</a>
+          <a href={home} className="bx-btn primary" onClick={goHome}>Zpět na nabídku boxů</a>
         </main>
         <Footer />
       </div>
@@ -1469,11 +1493,11 @@ export function BoxDetail({ id }: { id: string }) {
         scrolled={scrolled}
         menuOpen={menuOpen}
         setMenuOpen={setMenuOpen}
-        linkBase="/"
+        linkBase={home}
         onDark={!scrolled}
       />
 
-      <BoxHero box={box} onReserve={() => setReserving(true)} />
+      <BoxHero box={box} onReserve={() => setReserving(true)} cardVariant={cardVariant} />
 
       <main className="bx">
         {/* Tabs and the first section share one group — 64px apart, not 145. */}
