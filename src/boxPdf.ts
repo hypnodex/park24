@@ -9,11 +9,16 @@ import { boxRooms, boxPlans, boxTotalArea, boxComputedPrice, boxParking, type Ro
  * both room legends over a navy contact block; the right side shows the two
  * floor plans and a photo strip.
  *
+ * The "drawings" variant (Figma frame "A4 - 2", node 238:357) swaps the right
+ * side for the architect's technical drawings — 1. NP and 2. NP side by side,
+ * the section underneath and a photo column. It only exists for boxes listed
+ * in BOX_DRAWINGS; any other box falls back to the standard card.
+ *
  * The card is painted onto a canvas and placed as a single full-page image:
  * jsPDF's built-in fonts can't encode Czech diacritics (č/ř/ž…), the system
  * font can. Not selectable text, but reliable and pixel-accurate.
  */
-export async function generateBoxPdf(box: Box): Promise<void> {
+export async function generateBoxPdf(box: Box, variant: BoxCardVariant = 'standard'): Promise<void> {
   // Opened synchronously, while the click is still the "user gesture", so the
   // popup blocker lets it through — everything below this line is async.
   const win = window.open('', '_blank')
@@ -33,8 +38,14 @@ export async function generateBoxPdf(box: Box): Promise<void> {
     ctx.fillRect(0, 0, W, H)
 
     await drawSidebar(ctx, box)
-    await drawPlans(ctx, box)
-    await drawPhotos(ctx)
+    const drawings = variant === 'drawings' ? BOX_DRAWINGS[box.id] : undefined
+    if (drawings) {
+      await drawTechnicalDrawings(ctx, drawings)
+      await drawPhotoColumn(ctx)
+    } else {
+      await drawPlans(ctx, box)
+      await drawPhotos(ctx)
+    }
 
     const img = canvas.toDataURL('image/jpeg', 0.92)
     const { jsPDF } = await import('jspdf') // lazy: keeps jsPDF out of the initial bundle
@@ -253,6 +264,18 @@ async function drawContact(ctx: CanvasRenderingContext2D) {
   }
 }
 
+export type BoxCardVariant = 'standard' | 'drawings'
+
+/** Architect's drawings for the "drawings" card. Portrait floor plans and a
+ *  landscape section, exported from the Figma frame at print resolution. */
+const BOX_DRAWINGS: Record<string, { np1: string; np2: string; rez: string }> = {
+  A1: {
+    np1: '/assets/drawings/a1-1np.png',
+    np2: '/assets/drawings/a1-2np.png',
+    rez: '/assets/drawings/a1-rez.png',
+  },
+}
+
 /* ─── Right side: floor plans ───────────────────────────────────────────── */
 async function drawPlans(ctx: CanvasRenderingContext2D, box: Box) {
   const plans = boxPlans(box.id)
@@ -271,17 +294,7 @@ async function drawPlan(
   slotW: number,
   slotH: number,
 ) {
-  // floor pill
-  ctx.font = `600 14px ${BODY}`
-  const tw = 80
-  const th = 31
-  roundRect(ctx, x, tabY, tw, th, th / 2)
-  ctx.fillStyle = NAVY
-  ctx.fill()
-  ctx.fillStyle = '#ffffff'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(label, x + tw / 2, tabY + th / 2 + 1)
+  drawPill(ctx, label, x, tabY)
 
   const plan = await loadImage(src).catch(() => null)
   if (!plan) return
@@ -318,7 +331,70 @@ async function drawPhotos(ctx: CanvasRenderingContext2D) {
   }
 }
 
+/* ─── Right side, "drawings" variant ────────────────────────────────────── */
+async function drawTechnicalDrawings(
+  ctx: CanvasRenderingContext2D,
+  d: { np1: string; np2: string; rez: string },
+) {
+  // Slots from the Figma frame; each drawing is contained, never cropped, so
+  // no dimension line near the edge can be cut off.
+  const slots: [string, string, number, number, number, number, number][] = [
+    ['1. NP', d.np1, 617, 58, 114, 311, 663],
+    ['2. NP', d.np2, 1005, 58, 114, 313, 666],
+    ['Řez', d.rez, 617, 819, 870, 603, 278],
+  ]
+  for (const [label, src, x, pillY, imgY, w, h] of slots) {
+    drawPill(ctx, label, x, pillY)
+    const img = await loadImage(src).catch(() => null)
+    if (img) drawContain(ctx, img, x, imgY, w, h)
+  }
+}
+
+/** Vertical photo column at the right edge. */
+async function drawPhotoColumn(ctx: CanvasRenderingContext2D) {
+  const srcs = ['/assets/gallery/g1.jpg', '/assets/gallery/g2.jpg', '/assets/gallery/g5.jpg']
+  const x = 1397
+  const y0 = 114
+  const w = 210
+  const h = 140.3
+  const gap = 13.1
+
+  for (let i = 0; i < srcs.length; i++) {
+    const img = await loadImage(srcs[i]).catch(() => null)
+    const y = y0 + i * (h + gap)
+    ctx.save()
+    roundRect(ctx, x, y, w, h, 11.6)
+    ctx.clip()
+    ctx.fillStyle = '#e3e8ef'
+    ctx.fillRect(x, y, w, h)
+    if (img) drawCover(ctx, img, x, y, w, h)
+    ctx.restore()
+  }
+}
+
 /* ─── Helpers ───────────────────────────────────────────────────────────── */
+/** Navy label pill above a drawing ("1. NP", "Řez"…). */
+function drawPill(ctx: CanvasRenderingContext2D, label: string, x: number, y: number) {
+  const w = 80
+  const h = 31
+  roundRect(ctx, x, y, w, h, h / 2)
+  ctx.fillStyle = NAVY
+  ctx.fill()
+  ctx.fillStyle = '#ffffff'
+  ctx.font = `600 14px ${BODY}`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(label, x + w / 2, y + h / 2 + 1)
+}
+
+/** Fits the whole image inside the box, centred — object-fit: contain. */
+function drawContain(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number) {
+  const s = Math.min(w / img.naturalWidth, h / img.naturalHeight)
+  const dw = img.naturalWidth * s
+  const dh = img.naturalHeight * s
+  ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh)
+}
+
 /** Fills the box, cropping the overflow — the canvas equivalent of object-fit: cover. */
 function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number) {
   const s = Math.max(w / img.naturalWidth, h / img.naturalHeight)

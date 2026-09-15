@@ -1,11 +1,11 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import './App.css'
 import { STATUS_LABEL, formatCzk, submitInquiry, useBoxes, type Box } from './store'
 import { BOX_MAP_IMAGE, BOX_POLYGONS } from './boxMapPolygons'
 import { boxRooms, boxPlans, boxTotalArea, boxComputedPrice, boxParking, type Room } from './boxRooms'
 import { navigate } from './router'
-import { generateBoxPdf } from './boxPdf'
+import { generateBoxPdf, type BoxCardVariant } from './boxPdf'
 import { BOX_STANDARDS } from './boxStandards'
 
 /** Respects the OS "reduce motion" setting — used to skip the hero video. */
@@ -26,7 +26,7 @@ function usePrefersReducedMotion(): boolean {
 /*  Main App                                                                   */
 /* ────────────────────────────────────────────────────────────────────────── */
 
-export default function App() {
+export default function App({ cardVariant = 'standard' }: { cardVariant?: BoxCardVariant }) {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -46,7 +46,7 @@ export default function App() {
   }, [])
 
   return (
-    <>
+    <CardVariantContext.Provider value={cardVariant}>
       {/* White wordmark while the header floats over the hero video */}
       <Header scrolled={scrolled} menuOpen={menuOpen} setMenuOpen={setMenuOpen} onDark={!scrolled} />
       <Hero />
@@ -59,9 +59,13 @@ export default function App() {
       <InteractiveMapContact />
       <Ticker />
       <Footer />
-    </>
+    </CardVariantContext.Provider>
   )
 }
+
+/** Which PDF card the homepage box list opens. /homepage2 tests the
+ *  "drawings" layout; the real homepage keeps the standard card. */
+const CardVariantContext = createContext<BoxCardVariant>('standard')
 
 /** Navigate to a box's detail page. */
 function openBox(id: string) {
@@ -556,6 +560,7 @@ const PdfIcon = () => (
 )
 
 function BoxList({ boxes }: { boxes: Box[] }) {
+  const cardVariant = useContext(CardVariantContext)
   return (
     <ul className="bs-list">
       {boxes.map((b) => {
@@ -588,7 +593,7 @@ function BoxList({ boxes }: { boxes: Box[] }) {
               title="Otevřít kartu (PDF)"
               onClick={(e) => {
                 e.stopPropagation()
-                generateBoxPdf(b)
+                generateBoxPdf(b, cardVariant)
               }}
             >
               <PdfIcon />
