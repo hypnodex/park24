@@ -8,6 +8,7 @@ import { navigate, usePath } from './router.ts'
 /**
  * Minimal pathname router. Routes:
  *   /          → public marketing site (App)
+ *   /homepage2 → test copy of the homepage for trying out design variants
  *   /box/:id   → single box detail page (BoxDetail)
  *   /admin     → password-gated admin (Admin)
  *
@@ -43,6 +44,9 @@ function Root() {
   if (path.startsWith('/admin')) {
     page = <Admin />
     key = 'admin'
+  } else if (/^\/homepage2\/?$/.test(path)) {
+    page = <App />
+    key = 'homepage2'
   } else if (boxId !== null) {
     page = <BoxDetail id={boxId} />
     key = `box:${boxId}`

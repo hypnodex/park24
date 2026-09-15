@@ -391,10 +391,8 @@ function CarouselSection() {
 function Features() {
   const [slideIdx, setSlideIdx] = useState(0)
   const slides = [
-    { label: '1. NP', src: '/assets/plan-1np.png' },
-    { label: '2. NP', src: '/assets/plan-2np.png' },
-    { label: 'Čelní pohled', src: '/assets/plan-front.png' },
-    { label: 'Řez', src: '/assets/plan-bok.png' },
+    { label: '1. NP', src: '/assets/features-1np.png' },
+    { label: 'Řez', src: '/assets/features-rez.png' },
   ]
 
   // No autoplay — the plans are only stepped through by the arrows (or dots),
