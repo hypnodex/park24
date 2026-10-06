@@ -1679,6 +1679,7 @@ export function ConstructionPage() {
                     aria-label={`Zvětšit fotku: ${p.title}, ${formatPhotoDate(p.date)}`}
                   >
                     <img src={p.thumb} alt={p.alt} loading="lazy" width={720} height={540} />
+                    {p.demo && <span className="cs-photo-badge">Ilustrační foto</span>}
                     <span className="cs-photo-caption">
                       <span className="cs-photo-title">{p.title}</span>
                       <time dateTime={p.date}>{formatPhotoDate(p.date)}</time>
@@ -1695,7 +1696,10 @@ export function ConstructionPage() {
 
       {lightboxAt !== null && (
         <GalleryModal
-          images={allPhotos.map((p) => ({ src: p.src, alt: `${p.title} — ${formatPhotoDate(p.date)}` }))}
+          images={allPhotos.map((p) => ({
+            src: p.src,
+            alt: `${p.title} — ${formatPhotoDate(p.date)}${p.demo ? ' (ilustrační foto)' : ''}`,
+          }))}
           start={lightboxAt}
           onClose={() => setLightboxAt(null)}
         />

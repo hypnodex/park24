@@ -20,6 +20,9 @@ export type ConstructionPhoto = {
   /** Krátký popis, co je na fotce. */
   title: string
   alt: string
+  /** Ukázková fotka (ne ze skutečné stavby) — na webu dostane štítek
+   *  „Ilustrační foto". Až budou skutečné fotky, záznamy s demo smazat. */
+  demo?: boolean
 }
 
 export const CONSTRUCTION_PHOTOS: ConstructionPhoto[] = [
@@ -36,6 +39,35 @@ export const CONSTRUCTION_PHOTOS: ConstructionPhoto[] = [
     date: '2026-08-24',
     title: 'Skrývka ornice',
     alt: 'Letecký pohled na staveniště Park24 — buldozer odstraňuje ornici z pozemku vedle železniční trati',
+  },
+
+  // ── UKÁZKA ROKU 2025 ─────────────────────────────────────────────────────
+  // Vizualizace hotového areálu z galerie, jen aby bylo vidět, jak stránka
+  // vypadá s více roky. Až budou skutečné fotky, tyto tři záznamy smazat
+  // (a soubory public/assets/vystavba/ukazka-*.jpg).
+  {
+    src: '/assets/gallery/g3.jpg',
+    thumb: '/assets/vystavba/ukazka-g3-thumb.jpg',
+    date: '2025-11-12',
+    title: 'Areál z ptačí perspektivy',
+    alt: 'Vizualizace areálu Park24 z ptačí perspektivy za soumraku',
+    demo: true,
+  },
+  {
+    src: '/assets/gallery/g4.jpg',
+    thumb: '/assets/vystavba/ukazka-g4-thumb.jpg',
+    date: '2025-06-03',
+    title: 'Řada boxů s parkováním',
+    alt: 'Vizualizace řady obchodně skladovacích boxů s parkovacími stáními',
+    demo: true,
+  },
+  {
+    src: '/assets/gallery/g6.jpg',
+    thumb: '/assets/vystavba/ukazka-g6-thumb.jpg',
+    date: '2025-03-18',
+    title: 'Skladová hala s mezaninem',
+    alt: 'Vizualizace skladové části boxu s regály a ocelovým mezaninem',
+    demo: true,
   },
 ]
 

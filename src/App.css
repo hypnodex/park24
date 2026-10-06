@@ -3269,3 +3269,17 @@ textarea.field-input {
   font-size: 14px;
   opacity: 0.85;
 }
+/* Marks placeholder photos that are not from the real construction site */
+.cs-photo-badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--navy);
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
