@@ -3287,3 +3287,26 @@ textarea.field-input {
   font-size: 12px;
   letter-spacing: 0.02em;
 }
+
+/* ─── Homepage teaser: Průběh výstavby (between gallery and map) ── */
+.cs-teaser {
+  max-width: var(--max-w);
+  margin: clamp(70px, 8.5vw, 145px) auto 0;
+  padding: 0 var(--gutter) clamp(70px, 8.5vw, 145px);
+}
+.cs-grid.cs-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.cs-teaser-cta {
+  display: flex;
+  justify-content: center;
+  margin-top: clamp(28px, 3vw, 48px);
+}
+.cs-teaser-cta .bx-btn {
+  padding: 0 28px;
+}
+@media (max-width: 900px) {
+  .cs-grid.cs-grid-3 {
+    grid-template-columns: 1fr;
+  }
+}

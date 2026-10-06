@@ -7,7 +7,7 @@ import { boxRooms, boxPlans, boxTotalArea, boxComputedPrice, boxParking, type Ro
 import { navigate } from './router'
 import { generateBoxPdf } from './boxPdf'
 import { BOX_STANDARDS } from './boxStandards'
-import { constructionYears, formatPhotoDate } from './construction'
+import { constructionYears, formatPhotoDate, type ConstructionPhoto } from './construction'
 
 /** Respects the OS "reduce motion" setting — used to skip the hero video. */
 function usePrefersReducedMotion(): boolean {
@@ -57,6 +57,7 @@ export default function App({ base = '' }: { base?: string }) {
       <BoxSelection />
       <BoxMap />
       <Gallery />
+      <ConstructionTeaser />
       <InteractiveMapContact />
       <Ticker />
       <Footer />
@@ -1656,22 +1657,7 @@ export function ConstructionPage() {
             <div className="cs-grid">
               {y.photos.map((p) => {
                 const at = index++
-                return (
-                  <button
-                    type="button"
-                    className="cs-photo"
-                    key={p.src}
-                    onClick={() => setLightboxAt(at)}
-                    aria-label={`Zvětšit fotku: ${p.title}, ${formatPhotoDate(p.date)}`}
-                  >
-                    <img src={p.thumb} alt={p.alt} loading="lazy" width={720} height={540} />
-                    {p.demo && <span className="cs-photo-badge">Ilustrační foto</span>}
-                    <span className="cs-photo-caption">
-                      <span className="cs-photo-title">{p.title}</span>
-                      <time dateTime={p.date}>{formatPhotoDate(p.date)}</time>
-                    </span>
-                  </button>
-                )
+                return <ConstructionTile key={p.src} photo={p} onOpen={() => setLightboxAt(at)} />
               })}
             </div>
           </section>
@@ -1682,14 +1668,81 @@ export function ConstructionPage() {
 
       {lightboxAt !== null && (
         <GalleryModal
-          images={allPhotos.map((p) => ({
-            src: p.src,
-            alt: `${p.title} — ${formatPhotoDate(p.date)}${p.demo ? ' (ilustrační foto)' : ''}`,
-          }))}
+          images={lightboxImages(allPhotos)}
           start={lightboxAt}
           onClose={() => setLightboxAt(null)}
         />
       )}
     </div>
+  )
+}
+
+/** One construction photo tile — used on the page and in the homepage teaser. */
+function ConstructionTile({ photo: p, onOpen }: { photo: ConstructionPhoto; onOpen: () => void }) {
+  return (
+    <button
+      type="button"
+      className="cs-photo"
+      onClick={onOpen}
+      aria-label={`Zvětšit fotku: ${p.title}, ${formatPhotoDate(p.date)}`}
+    >
+      <img src={p.thumb} alt={p.alt} loading="lazy" width={720} height={540} />
+      {p.demo && <span className="cs-photo-badge">Ilustrační foto</span>}
+      <span className="cs-photo-caption">
+        <span className="cs-photo-title">{p.title}</span>
+        <time dateTime={p.date}>{formatPhotoDate(p.date)}</time>
+      </span>
+    </button>
+  )
+}
+
+function lightboxImages(photos: ConstructionPhoto[]) {
+  return photos.map((p) => ({
+    src: p.src,
+    alt: `${p.title} — ${formatPhotoDate(p.date)}${p.demo ? ' (ilustrační foto)' : ''}`,
+  }))
+}
+
+/** Homepage section: the three newest construction photos and a link to
+ *  the full „Průběh výstavby" page. */
+function ConstructionTeaser() {
+  const photos = useMemo(() => constructionYears().flatMap((y) => y.photos).slice(0, 3), [])
+  const [lightboxAt, setLightboxAt] = useState<number | null>(null)
+  if (photos.length === 0) return null
+
+  return (
+    <section className="cs-teaser" id="vystavba">
+      <div className="bm-head">
+        <div className="eyebrow">Jak stavba roste</div>
+        <h2>Průběh výstavby</h2>
+      </div>
+
+      <div className="cs-grid cs-grid-3">
+        {photos.map((p, i) => (
+          <ConstructionTile key={p.src} photo={p} onOpen={() => setLightboxAt(i)} />
+        ))}
+      </div>
+
+      <div className="cs-teaser-cta">
+        <a
+          className="bx-btn ghost"
+          href={CONSTRUCTION_PATH}
+          onClick={(e) => {
+            e.preventDefault()
+            navigate(CONSTRUCTION_PATH)
+          }}
+        >
+          Celý průběh výstavby
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <polyline points="14 5 21 12 14 19" />
+          </svg>
+        </a>
+      </div>
+
+      {lightboxAt !== null && (
+        <GalleryModal images={lightboxImages(photos)} start={lightboxAt} onClose={() => setLightboxAt(null)} />
+      )}
+    </section>
   )
 }
