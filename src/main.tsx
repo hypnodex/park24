@@ -9,7 +9,6 @@ import { navigate, usePath } from './router.ts'
  * Minimal pathname router. Routes:
  *   /          → public marketing site (App)
  *   /homepage2 → test copy of the homepage for trying out design variants
- *                (currently: the "drawings" PDF card for box A1)
  *   /homepage2/box/:id → box detail inside that test copy
  *   /prubeh-vystavby → construction progress photo galleries (ConstructionPage)
  *   /box/:id   → single box detail page (BoxDetail)
@@ -53,12 +52,10 @@ function Root() {
     page = <ConstructionPage />
     key = 'construction'
   } else if (/^\/homepage2\/?$/.test(path)) {
-    page = <App cardVariant="drawings" base="/homepage2" />
+    page = <App base="/homepage2" />
     key = 'homepage2'
   } else if (boxId !== null) {
-    page = base
-      ? <BoxDetail id={boxId} cardVariant="drawings" base={base} />
-      : <BoxDetail id={boxId} />
+    page = <BoxDetail id={boxId} base={base} />
     key = `box:${base}:${boxId}`
   } else {
     page = <App />

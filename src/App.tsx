@@ -5,7 +5,7 @@ import { STATUS_LABEL, formatCzk, submitInquiry, useBoxes, type Box } from './st
 import { BOX_MAP_IMAGE, BOX_POLYGONS } from './boxMapPolygons'
 import { boxRooms, boxPlans, boxTotalArea, boxComputedPrice, boxParking, type Room } from './boxRooms'
 import { navigate } from './router'
-import { generateBoxPdf, type BoxCardVariant } from './boxPdf'
+import { generateBoxPdf } from './boxPdf'
 import { BOX_STANDARDS } from './boxStandards'
 import { constructionYears, formatPhotoDate } from './construction'
 
@@ -27,7 +27,7 @@ function usePrefersReducedMotion(): boolean {
 /*  Main App                                                                   */
 /* ────────────────────────────────────────────────────────────────────────── */
 
-export default function App({ cardVariant = 'standard', base = '' }: { cardVariant?: BoxCardVariant; base?: string }) {
+export default function App({ base = '' }: { base?: string }) {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -47,7 +47,7 @@ export default function App({ cardVariant = 'standard', base = '' }: { cardVaria
   }, [])
 
   return (
-    <HomeVariantContext.Provider value={{ cardVariant, base }}>
+    <HomeVariantContext.Provider value={{ base }}>
       {/* White wordmark while the header floats over the hero video */}
       <Header scrolled={scrolled} menuOpen={menuOpen} setMenuOpen={setMenuOpen} onDark={!scrolled} />
       <Hero />
@@ -64,13 +64,9 @@ export default function App({ cardVariant = 'standard', base = '' }: { cardVaria
   )
 }
 
-/** Which PDF card the homepage opens and under which URL prefix it lives.
- *  /homepage2 tests the "drawings" layout and keeps its box pages under
- *  /homepage2/box/:id; the real homepage keeps the standard card. */
-const HomeVariantContext = createContext<{ cardVariant: BoxCardVariant; base: string }>({
-  cardVariant: 'standard',
-  base: '',
-})
+/** URL prefix of the homepage copy being rendered. /homepage2 is a test copy
+ *  and keeps its box pages under /homepage2/box/:id. */
+const HomeVariantContext = createContext<{ base: string }>({ base: '' })
 
 /** Navigate to a box's detail page, staying inside the current homepage copy. */
 function openBox(id: string, base = '') {
@@ -412,8 +408,8 @@ function CarouselSection() {
 function Features() {
   const [slideIdx, setSlideIdx] = useState(0)
   const slides = [
-    { label: '1. NP', src: '/assets/features-1np.png' },
     { label: 'Řez', src: '/assets/features-rez.png' },
+    { label: '2. NP', src: '/assets/features-2np.png' },
   ]
 
   // No autoplay — the plans are only stepped through by the arrows (or dots),
@@ -577,7 +573,7 @@ const PdfIcon = () => (
 )
 
 function BoxList({ boxes }: { boxes: Box[] }) {
-  const { cardVariant, base } = useContext(HomeVariantContext)
+  const { base } = useContext(HomeVariantContext)
   return (
     <ul className="bs-list">
       {boxes.map((b) => {
@@ -610,7 +606,7 @@ function BoxList({ boxes }: { boxes: Box[] }) {
               title="Otevřít kartu (PDF)"
               onClick={(e) => {
                 e.stopPropagation()
-                generateBoxPdf(b, cardVariant)
+                generateBoxPdf(b)
               }}
             >
               <PdfIcon />
@@ -1292,15 +1288,7 @@ function RoomLegend({ rows }: { rows: Room[] }) {
 }
 
 /** Full-bleed photo header: status, box name, price and the two actions. */
-function BoxHero({
-  box,
-  onReserve,
-  cardVariant,
-}: {
-  box: Box
-  onReserve: () => void
-  cardVariant: BoxCardVariant
-}) {
+function BoxHero({ box, onReserve }: { box: Box; onReserve: () => void }) {
   const available = box.status === 'volny'
   return (
     <section className="bx-hero" id="top">
@@ -1319,7 +1307,7 @@ function BoxHero({
         </div>
 
         <div className="bx-hero-actions">
-          <button type="button" className="bx-btn ghost" onClick={() => generateBoxPdf(box, cardVariant)}>
+          <button type="button" className="bx-btn ghost" onClick={() => generateBoxPdf(box)}>
             <PdfIcon />
             Otevřít kartu (PDF)
           </button>
@@ -1431,12 +1419,9 @@ function StandardsAccordion() {
 
 export function BoxDetail({
   id,
-  cardVariant = 'standard',
   base = '',
 }: {
   id: string
-  /** PDF card layout; /homepage2/box/:id passes "drawings". */
-  cardVariant?: BoxCardVariant
   /** URL prefix of the homepage copy this page belongs to ('' = real site). */
   base?: string
 }) {
@@ -1510,7 +1495,7 @@ export function BoxDetail({
         onDark={!scrolled}
       />
 
-      <BoxHero box={box} onReserve={() => setReserving(true)} cardVariant={cardVariant} />
+      <BoxHero box={box} onReserve={() => setReserving(true)} />
 
       <main className="bx">
         {/* Tabs and the first section share one group — 64px apart, not 145. */}
@@ -1561,35 +1546,36 @@ export function BoxDetail({
         <section className="bx-block bx-block-center" id="plans">
           <h2 className="bx-h2">Půdorysy a rozměry</h2>
 
-          <div className="bx-plan-group">
-            {/* One control drives both the drawing and the legend, so they
-                can never end up showing different floors. */}
-            <div className="bx-tabs" role="tablist" aria-label="Podlaží">
-              {(['np1', 'np2'] as const).map((f) => (
-                <button
-                  key={f}
-                  type="button"
-                  role="tab"
-                  aria-selected={floor === f}
-                  className={floor === f ? 'active' : ''}
-                  onClick={() => setFloor(f)}
-                >
-                  {f === 'np1' ? '1. NP' : '2. NP'}
-                </button>
-              ))}
-            </div>
-
-            {/* The drawing is ~3:1, so on phones it scrolls sideways at a
-                readable size instead of shrinking to a 110px-tall strip. */}
-            <div className="bx-plan-scroll">
+          {/* Drawing of the selected floor on the left, its legend on the right.
+              One control drives both, so they can never show different floors. */}
+          <div className="bx-plan-layout">
+            <div className="bx-plan-figure">
               <img
-                className="bx-plan"
                 src={planSrc}
                 alt={`Půdorys ${floorLabel} boxu ${box.id}`}
+                width={1002}
+                height={1960}
               />
             </div>
 
-            {rooms && <RoomLegend rows={floor === 'np1' ? rooms.np1 : rooms.np2} />}
+            <div className="bx-plan-side">
+              <div className="bx-tabs" role="tablist" aria-label="Podlaží">
+                {(['np1', 'np2'] as const).map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    role="tab"
+                    aria-selected={floor === f}
+                    className={floor === f ? 'active' : ''}
+                    onClick={() => setFloor(f)}
+                  >
+                    {f === 'np1' ? '1. NP' : '2. NP'}
+                  </button>
+                ))}
+              </div>
+
+              {rooms && <RoomLegend rows={floor === 'np1' ? rooms.np1 : rooms.np2} />}
+            </div>
           </div>
         </section>
 

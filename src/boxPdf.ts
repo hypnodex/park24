@@ -4,21 +4,17 @@ import { boxRooms, boxPlans, boxTotalArea, boxComputedPrice, boxParking, type Ro
 /**
  * Generates the one-page A4 landscape "box card" PDF and opens it in a new tab.
  *
- * Layout follows the Figma frame "A4 - 1" (node 223:3618), designed at
+ * Layout follows the Figma frame "A4 - 4" (node 243:348), designed at
  * 1689×1194 — exactly A4 landscape. Left sidebar carries the logo, price and
- * both room legends over a navy contact block; the right side shows the two
- * floor plans and a photo strip.
- *
- * The "drawings" variant (Figma frame "A4 - 2", node 238:357) swaps the right
- * side for the architect's technical drawings — 1. NP and 2. NP side by side,
- * the section underneath and a photo column. It only exists for boxes listed
- * in BOX_DRAWINGS; any other box falls back to the standard card.
+ * both room legends over a navy contact block; the right side shows the box's
+ * own 1. NP and 2. NP drawings side by side, the building section below them
+ * and a photo column.
  *
  * The card is painted onto a canvas and placed as a single full-page image:
  * jsPDF's built-in fonts can't encode Czech diacritics (č/ř/ž…), the system
  * font can. Not selectable text, but reliable and pixel-accurate.
  */
-export async function generateBoxPdf(box: Box, variant: BoxCardVariant = 'standard'): Promise<void> {
+export async function generateBoxPdf(box: Box): Promise<void> {
   // Opened synchronously, while the click is still the "user gesture", so the
   // popup blocker lets it through — everything below this line is async.
   const win = window.open('', '_blank')
@@ -38,14 +34,8 @@ export async function generateBoxPdf(box: Box, variant: BoxCardVariant = 'standa
     ctx.fillRect(0, 0, W, H)
 
     await drawSidebar(ctx, box)
-    const drawings = variant === 'drawings' ? BOX_DRAWINGS[box.id] : undefined
-    if (drawings) {
-      await drawTechnicalDrawings(ctx, drawings)
-      await drawPhotoColumn(ctx)
-    } else {
-      await drawPlans(ctx, box)
-      await drawPhotos(ctx)
-    }
+    await drawDrawings(ctx, box)
+    await drawPhotoColumn(ctx)
 
     const img = canvas.toDataURL('image/jpeg', 0.92)
     const { jsPDF } = await import('jspdf') // lazy: keeps jsPDF out of the initial bundle
@@ -264,84 +254,19 @@ async function drawContact(ctx: CanvasRenderingContext2D) {
   }
 }
 
-export type BoxCardVariant = 'standard' | 'drawings'
+/* ─── Right side: drawings ─────────────────────────────────────────────── */
+/** Building section — the same for every box. */
+const SECTION_DRAWING = '/assets/drawings/rez.png'
 
-/** Architect's drawings for the "drawings" card. Portrait floor plans and a
- *  landscape section, exported from the Figma frame at print resolution. */
-const BOX_DRAWINGS: Record<string, { np1: string; np2: string; rez: string }> = {
-  A1: {
-    np1: '/assets/drawings/a1-1np.png',
-    np2: '/assets/drawings/a1-2np.png',
-    rez: '/assets/drawings/a1-rez.png',
-  },
-}
-
-/* ─── Right side: floor plans ───────────────────────────────────────────── */
-async function drawPlans(ctx: CanvasRenderingContext2D, box: Box) {
+async function drawDrawings(ctx: CanvasRenderingContext2D, box: Box) {
   const plans = boxPlans(box.id)
-  // Slots are anchored top-left like the design; each drawing keeps its own
-  // aspect ratio, which differs between the standard, B1 and B2 layouts.
-  await drawPlan(ctx, '1. NP', plans.np1, 617, 58, 934, 340)
-  await drawPlan(ctx, '2. NP', plans.np2, 617, 498, 934, 302)
-}
-
-async function drawPlan(
-  ctx: CanvasRenderingContext2D,
-  label: string,
-  src: string,
-  x: number,
-  tabY: number,
-  slotW: number,
-  slotH: number,
-) {
-  drawPill(ctx, label, x, tabY)
-
-  const plan = await loadImage(src).catch(() => null)
-  if (!plan) return
-  const a = plan.naturalWidth / plan.naturalHeight
-  let dw = slotW
-  let dh = slotW / a
-  if (dh > slotH) {
-    dh = slotH
-    dw = slotH * a
-  }
-  ctx.drawImage(plan, x, tabY + 52, dw, dh)
-}
-
-/* ─── Right side: photo strip ───────────────────────────────────────────── */
-async function drawPhotos(ctx: CanvasRenderingContext2D) {
-  const srcs = ['/assets/gallery/g1.jpg', '/assets/gallery/g2.jpg', '/assets/gallery/g5.jpg']
-  const x0 = 620
-  const y = 927
-  const total = 961
-  const gap = 18
-  const w = (total - gap * (srcs.length - 1)) / srcs.length
-  const h = 193
-
-  for (let i = 0; i < srcs.length; i++) {
-    const img = await loadImage(srcs[i]).catch(() => null)
-    const x = x0 + i * (w + gap)
-    ctx.save()
-    roundRect(ctx, x, y, w, h, 16)
-    ctx.clip()
-    ctx.fillStyle = '#e3e8ef'
-    ctx.fillRect(x, y, w, h)
-    if (img) drawCover(ctx, img, x, y, w, h)
-    ctx.restore()
-  }
-}
-
-/* ─── Right side, "drawings" variant ────────────────────────────────────── */
-async function drawTechnicalDrawings(
-  ctx: CanvasRenderingContext2D,
-  d: { np1: string; np2: string; rez: string },
-) {
   // Slots from the Figma frame; each drawing is contained, never cropped, so
-  // no dimension line near the edge can be cut off.
+  // no dimension line near the edge can be cut off. (The frame swaps the two
+  // plan images under their pills; here 1. NP really is the ground floor.)
   const slots: [string, string, number, number, number, number, number][] = [
-    ['1. NP', d.np1, 617, 58, 114, 311, 663],
-    ['2. NP', d.np2, 1005, 58, 114, 313, 666],
-    ['Řez', d.rez, 617, 819, 870, 603, 278],
+    ['1. NP', plans.np1, 617, 58, 100, 336, 658],
+    ['2. NP', plans.np2, 983, 58, 100, 336, 658],
+    ['Řez', SECTION_DRAWING, 617, 819, 870, 496, 272],
   ]
   for (const [label, src, x, pillY, imgY, w, h] of slots) {
     drawPill(ctx, label, x, pillY)
@@ -354,7 +279,7 @@ async function drawTechnicalDrawings(
 async function drawPhotoColumn(ctx: CanvasRenderingContext2D) {
   const srcs = ['/assets/gallery/g1.jpg', '/assets/gallery/g2.jpg', '/assets/gallery/g5.jpg']
   const x = 1397
-  const y0 = 114
+  const y0 = 118
   const w = 210
   const h = 140.3
   const gap = 13.1

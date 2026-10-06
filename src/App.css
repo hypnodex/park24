@@ -2881,12 +2881,31 @@ textarea.field-input {
 }
 
 /* ─── Floor plans ─────────────────────────────────────────────── */
-.bx-plan-group {
+/* Portrait drawing on the left, floor tabs + legend centred beside it */
+.bx-plan-layout {
   width: 100%;
   display: flex;
-  flex-direction: column;
   align-items: center;
   gap: clamp(32px, 3.7vw, 64px);
+}
+.bx-plan-figure {
+  flex: 0 0 auto;
+  width: min(431px, 49%);
+}
+.bx-plan-figure img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.bx-plan-side {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+.bx-plan-side .bx-tabs {
+  width: 100%;
 }
 .bx-tabs {
   width: 340px;
@@ -2914,20 +2933,6 @@ textarea.field-input {
 .bx-tabs button.active {
   background: var(--navy);
   color: #fff;
-}
-.bx-plan-scroll {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-}
-/* The drawing is wider than the 880px text column and stays centred on the
-   page, so it needs to escape the global `img { max-width: 100% }` rule. */
-.bx-plan {
-  width: min(1134px, 100vw - 2 * var(--gutter));
-  max-width: none;
-  height: auto;
-  display: block;
-  object-fit: contain;
 }
 
 /* ─── Room legend table ───────────────────────────────────────── */
@@ -3125,15 +3130,14 @@ textarea.field-input {
     padding: 14px 16px;
     font-size: 17px;
   }
-  /* Keep the floor plan legible instead of squeezing it into the column */
-  .bx-plan-scroll {
-    justify-content: flex-start;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+  /* Drawing above the legend once there is no room for both side by side */
+  .bx-plan-layout {
+    flex-direction: column;
+    align-items: stretch;
   }
-  .bx-plan {
-    width: 760px;
-    flex: none;
+  .bx-plan-figure {
+    width: min(431px, 100%);
+    align-self: center;
   }
 }
 

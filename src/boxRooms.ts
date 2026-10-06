@@ -94,17 +94,9 @@ export function boxComputedPrice(id: string): number | null {
   return Math.round(area * PRICE_PER_M2 + boxParking(id) * PRICE_PER_PARKING)
 }
 
-// Within each row, odd-numbered boxes use the "lichy" drawings and even ones the
-// mirrored "sudy" drawings — A1/A3/… and B1/B3/… share the same handedness.
-// 1.NP plans include the parking layout from the site plan: 4 spaces by default,
-// except B1 (5 spaces) and B2 (3 spaces), which have dedicated drawings.
+// Floor plans per box from the architect's export (Boxy_bez_vnejsich_kot):
+// one portrait drawing per floor, already specific to each box — mirroring,
+// B1's five and B2's three parking spaces are drawn in, so no logic is needed.
 export function boxPlans(id: string): { np1: string; np2: string } {
-  const n = parseInt(id.replace(/\D/g, ''), 10)
-  const even = n % 2 === 0
-  const np2 = even ? '/assets/plan-2np-even.png' : '/assets/plan-2np-odd.png'
-  let np1: string
-  if (id === 'B1') np1 = '/assets/plan-1np-b1.png'
-  else if (id === 'B2') np1 = '/assets/plan-1np-b2.png'
-  else np1 = even ? '/assets/plan-1np-even.png' : '/assets/plan-1np-odd.png'
-  return { np1, np2 }
+  return { np1: `/assets/plans/${id}-1np.png`, np2: `/assets/plans/${id}-2np.png` }
 }
