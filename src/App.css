@@ -3157,3 +3157,115 @@ textarea.field-input {
     width: 52px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Průběh výstavby — /prubeh-vystavby
+   Photo grid grouped by year; tiles open the shared GalleryModal.
+   ═══════════════════════════════════════════════════════════════════ */
+.cs {
+  flex: 1;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: clamp(110px, 12vw, 170px) var(--gutter) clamp(64px, 8vw, 120px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(48px, 6vw, 96px);
+}
+.cs-head {
+  max-width: 760px;
+}
+.cs-title {
+  margin: 12px 0 0;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(38px, 5vw, 80px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--navy);
+}
+.cs-lead {
+  margin: clamp(14px, 1.6vw, 22px) 0 0;
+  font-family: var(--body);
+  font-size: clamp(15px, 1.2vw, 18px);
+  line-height: 1.6;
+  color: rgba(31, 43, 94, 0.7);
+}
+.cs-year-head {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding-bottom: clamp(14px, 1.6vw, 20px);
+  margin-bottom: clamp(18px, 2vw, 28px);
+  border-bottom: 1px solid #edeef2;
+}
+.cs-year-title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(30px, 2.8vw, 48px);
+  letter-spacing: -0.01em;
+  color: var(--navy);
+}
+.cs-year-count {
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 15px;
+  color: rgba(31, 43, 94, 0.55);
+}
+.cs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: clamp(10px, 1.2vw, 16px);
+}
+.cs-photo {
+  position: relative;
+  display: block;
+  padding: 0;
+  border: none;
+  border-radius: 16px;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  background: var(--gray);
+  cursor: zoom-in;
+}
+.cs-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.45s ease;
+}
+.cs-photo:hover img,
+.cs-photo:focus-visible img {
+  transform: scale(1.04);
+}
+.cs-photo:focus-visible {
+  outline: 3px solid var(--pink);
+  outline-offset: 3px;
+}
+/* Caption over a bottom fade so it reads on any photo */
+.cs-photo-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 44px 18px 16px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0));
+  color: #fff;
+  text-align: left;
+  font-family: var(--body);
+}
+.cs-photo-title {
+  font-weight: 600;
+  font-size: 16px;
+}
+.cs-photo-caption time {
+  flex: none;
+  font-size: 14px;
+  opacity: 0.85;
+}

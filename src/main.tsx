@@ -1,7 +1,7 @@
 import { StrictMode, useEffect, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import App, { BoxDetail } from './App.tsx'
+import App, { BoxDetail, ConstructionPage } from './App.tsx'
 import Admin from './Admin.tsx'
 import { navigate, usePath } from './router.ts'
 
@@ -11,6 +11,7 @@ import { navigate, usePath } from './router.ts'
  *   /homepage2 → test copy of the homepage for trying out design variants
  *                (currently: the "drawings" PDF card for box A1)
  *   /homepage2/box/:id → box detail inside that test copy
+ *   /prubeh-vystavby → construction progress photo galleries (ConstructionPage)
  *   /box/:id   → single box detail page (BoxDetail)
  *   /admin     → password-gated admin (Admin)
  *
@@ -48,6 +49,9 @@ function Root() {
   if (path.startsWith('/admin')) {
     page = <Admin />
     key = 'admin'
+  } else if (/^\/prubeh-vystavby\/?$/.test(path)) {
+    page = <ConstructionPage />
+    key = 'construction'
   } else if (/^\/homepage2\/?$/.test(path)) {
     page = <App cardVariant="drawings" base="/homepage2" />
     key = 'homepage2'

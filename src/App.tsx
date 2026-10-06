@@ -7,6 +7,7 @@ import { boxRooms, boxPlans, boxTotalArea, boxComputedPrice, boxParking, type Ro
 import { navigate } from './router'
 import { generateBoxPdf, type BoxCardVariant } from './boxPdf'
 import { BOX_STANDARDS } from './boxStandards'
+import { constructionYears, formatPhotoDate } from './construction'
 
 /** Respects the OS "reduce motion" setting — used to skip the hero video. */
 function usePrefersReducedMotion(): boolean {
@@ -148,14 +149,26 @@ function Header({
         </button>
         <nav className={`menu-panel${menuOpen ? ' open' : ''}`} aria-hidden={!menuOpen}>
           {[
-            ['01', 'Úvod', 'top'],
-            ['02', 'O Boxech', 'about'],
-            ['03', 'Parametry & výbava', 'features'],
-            ['04', 'Nabídka boxů', 'box-map'],
-            ['05', 'Galerie', 'gallery'],
-            ['06', 'Lokalita & Kontakt', 'contact'],
-          ].map(([num, text, anchor]) => (
-            <a key={anchor} href={`${linkBase}#${anchor}`} onClick={() => setMenuOpen(false)}>
+            { num: '01', text: 'Úvod', href: `${linkBase}#top` },
+            { num: '02', text: 'O Boxech', href: `${linkBase}#about` },
+            { num: '03', text: 'Parametry & výbava', href: `${linkBase}#features` },
+            { num: '04', text: 'Nabídka boxů', href: `${linkBase}#box-map` },
+            { num: '05', text: 'Galerie', href: `${linkBase}#gallery` },
+            { num: '06', text: 'Průběh výstavby', href: CONSTRUCTION_PATH, page: true },
+            { num: '07', text: 'Lokalita & Kontakt', href: `${linkBase}#contact` },
+          ].map(({ num, text, href, page }) => (
+            <a
+              key={num}
+              href={href}
+              onClick={(e) => {
+                setMenuOpen(false)
+                // A real page, not a section: switch route without a reload.
+                if (page) {
+                  e.preventDefault()
+                  navigate(href)
+                }
+              }}
+            >
               <span className="mp-num">{num}</span>
               <span className="mp-text">{text}</span>
             </a>
@@ -1605,6 +1618,88 @@ export function BoxDetail({
       <Footer />
 
       {reserving && <InquiryModal box={box} onClose={() => setReserving(false)} />}
+    </div>
+  )
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/*  Průběh výstavby — /prubeh-vystavby                                         */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+export const CONSTRUCTION_PATH = '/prubeh-vystavby'
+
+export function ConstructionPage() {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [lightboxAt, setLightboxAt] = useState<number | null>(null)
+  const years = useMemo(() => constructionYears(), [])
+  // The modal walks through every photo, across years, in on-page order.
+  const allPhotos = useMemo(() => years.flatMap((y) => y.photos), [years])
+
+  useEffect(() => {
+    document.title = 'Průběh výstavby — Park24'
+    return () => { document.title = 'Park24' }
+  }, [])
+
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior })
+  }, [])
+
+  let index = 0
+  return (
+    <div className="box-detail-page">
+      <Header scrolled menuOpen={menuOpen} setMenuOpen={setMenuOpen} linkBase="/" />
+
+      <main className="cs" id="top">
+        <header className="cs-head">
+          <div className="eyebrow">Park24 Lelekovice</div>
+          <h1 className="cs-title">Průběh výstavby</h1>
+          <p className="cs-lead">
+            Jak roste areál obchodně skladovacích boxů — fotky přímo ze stavby, seřazené od
+            nejnovějších.
+          </p>
+        </header>
+
+        {years.map((y) => (
+          <section className="cs-year" key={y.year} aria-labelledby={`cs-year-${y.year}`}>
+            <div className="cs-year-head">
+              <h2 className="cs-year-title" id={`cs-year-${y.year}`}>{y.year}</h2>
+              <span className="cs-year-count">
+                {y.photos.length} {y.photos.length === 1 ? 'fotka' : y.photos.length < 5 ? 'fotky' : 'fotek'}
+              </span>
+            </div>
+            <div className="cs-grid">
+              {y.photos.map((p) => {
+                const at = index++
+                return (
+                  <button
+                    type="button"
+                    className="cs-photo"
+                    key={p.src}
+                    onClick={() => setLightboxAt(at)}
+                    aria-label={`Zvětšit fotku: ${p.title}, ${formatPhotoDate(p.date)}`}
+                  >
+                    <img src={p.thumb} alt={p.alt} loading="lazy" width={720} height={540} />
+                    <span className="cs-photo-caption">
+                      <span className="cs-photo-title">{p.title}</span>
+                      <time dateTime={p.date}>{formatPhotoDate(p.date)}</time>
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+        ))}
+      </main>
+
+      <Footer />
+
+      {lightboxAt !== null && (
+        <GalleryModal
+          images={allPhotos.map((p) => ({ src: p.src, alt: `${p.title} — ${formatPhotoDate(p.date)}` }))}
+          start={lightboxAt}
+          onClose={() => setLightboxAt(null)}
+        />
+      )}
     </div>
   )
 }
