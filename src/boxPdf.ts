@@ -106,6 +106,7 @@ async function ensureFonts(): Promise<void> {
   try {
     await Promise.all([
       document.fonts.load(`700 34px ${DISPLAY}`),
+      document.fonts.load(`700 52px ${DISPLAY}`),
       document.fonts.load(`400 15px ${BODY}`),
       document.fonts.load(`500 12px ${BODY}`),
       document.fonts.load(`700 20px ${BODY}`),
@@ -124,6 +125,17 @@ async function drawSidebar(ctx: CanvasRenderingContext2D, box: Box) {
   // wordmark
   const logo = await loadImage('/assets/logo_park24.svg').catch(() => null)
   if (logo) ctx.drawImage(logo, PAD, 45, 266, 83)
+
+  // which box this card is for, right-aligned beside the wordmark — the
+  // sheet gets printed and forwarded, so it has to identify itself
+  ctx.textAlign = 'right'
+  ctx.textBaseline = 'alphabetic'
+  ctx.fillStyle = NAVY_60
+  ctx.font = `600 13px ${BODY}`
+  ctx.fillText('BOX', SIDEBAR_W - PAD, 70)
+  ctx.fillStyle = NAVY
+  ctx.font = `700 52px ${DISPLAY}`
+  ctx.fillText(box.id, SIDEBAR_W - PAD, 120)
 
   // price card
   ctx.fillStyle = '#ffffff'
