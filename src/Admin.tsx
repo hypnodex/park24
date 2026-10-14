@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './Admin.css'
+import { boxComputedPrice, boxParking, boxTotalArea } from './boxRooms'
 import {
   STATUS_LABEL,
   formatCzk,
@@ -66,9 +67,6 @@ function LoginGate({ onSuccess }: { onSuccess: () => void }) {
         </button>
         <a href="/" className="adm-link">← Zpět na web</a>
       </form>
-      <div className="adm-hint">
-        Výchozí heslo: <code>park24-admin</code> (změníte env <code>ADMIN_PASSWORD</code>)
-      </div>
     </div>
   )
 }
@@ -135,8 +133,8 @@ function BoxesTab() {
     return c
   }, [draft])
 
-  function updateBox(idx: number, patch: Partial<Box>) {
-    setDraft((d) => d.map((b, i) => (i === idx ? { ...b, ...patch } : b)))
+  function setStatus(idx: number, status: Status) {
+    setDraft((d) => d.map((b, i) => (i === idx ? { ...b, status } : b)))
   }
 
   async function saveAll() {
@@ -154,7 +152,7 @@ function BoxesTab() {
   }
 
   async function resetToDefaults() {
-    if (!confirm('Opravdu obnovit výchozí data všech 12 boxů?')) return
+    if (!confirm(`Opravdu označit všech ${draft.length} boxů zpět jako volné?`)) return
     setSaving(true)
     const fresh = await resetBoxes()
     setDraft(fresh)
@@ -169,7 +167,8 @@ function BoxesTab() {
   return (
     <>
       <p className="adm-sub">
-        Změny se ukládají na server a okamžitě se promítnou na veřejný web pro všechny návštěvníky.
+        Stav boxu se ukládá na server a okamžitě se promítne na veřejný web pro všechny návštěvníky.
+        Plocha, parkování i cena se počítají z půdorysů projektu, proto se tady needitují.
       </p>
 
       <div className="adm-summary">
@@ -197,9 +196,10 @@ function BoxesTab() {
         <div className="adm-tr adm-tr-head" role="row">
           <div role="columnheader">Box</div>
           <div role="columnheader">Stav</div>
-          <div role="columnheader">Plocha (m²)</div>
-          <div role="columnheader">Cena (Kč)</div>
-          <div role="columnheader">Náhled</div>
+          <div role="columnheader">Plocha</div>
+          <div role="columnheader">Parkování</div>
+          <div role="columnheader">Cena</div>
+          <div role="columnheader">Na webu</div>
         </div>
 
         {draft.map((b, i) => (
@@ -210,7 +210,8 @@ function BoxesTab() {
               <select
                 className="adm-select"
                 value={b.status}
-                onChange={(e) => updateBox(i, { status: e.target.value as Status })}
+                onChange={(e) => setStatus(i, e.target.value as Status)}
+                aria-label={`Stav boxu ${b.id}`}
               >
                 {(Object.keys(STATUS_LABEL) as Status[]).map((s) => (
                   <option key={s} value={s}>{STATUS_LABEL[s]}</option>
@@ -218,35 +219,20 @@ function BoxesTab() {
               </select>
             </div>
 
-            <div className="adm-cell">
-              <input
-                type="number"
-                className="adm-input"
-                value={b.area}
-                min={1}
-                step={1}
-                onChange={(e) => updateBox(i, { area: Number(e.target.value) || 0 })}
-              />
+            <div className="adm-cell adm-cell-derived">
+              {(boxTotalArea(b.id) ?? b.area).toLocaleString('cs-CZ')} m²
             </div>
 
-            <div className="adm-cell">
-              <input
-                type="number"
-                className="adm-input"
-                value={b.price}
-                min={0}
-                step={100}
-                onChange={(e) => updateBox(i, { price: Number(e.target.value) || 0 })}
-              />
+            <div className="adm-cell adm-cell-derived">{boxParking(b.id)}×</div>
+
+            <div className="adm-cell adm-cell-derived">
+              {formatCzk(boxComputedPrice(b.id) ?? b.price)}
             </div>
 
             <div className="adm-cell adm-cell-preview">
               <span className={`adm-badge adm-badge-${b.status}`}>
                 {b.status === 'volny' && <span className="dot" />}
                 {STATUS_LABEL[b.status]}
-              </span>
-              <span className="adm-preview-meta">
-                {b.area} m² · {formatCzk(b.price)}
               </span>
             </div>
           </div>

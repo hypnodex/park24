@@ -43,24 +43,28 @@ function getAuthHeader(): Record<string, string> {
 }
 
 /* ─── Box data (API-backed) ─────────────────────────────────────────── */
+/* Seed / fallback data. Area and price mirror what boxRooms.ts computes from the
+ * project drawings (area x 65 000 Kc + parking x 100 000 Kc); the public site
+ * recomputes them, so these only show if the room data ever goes missing.
+ * Only `status` is edited in the admin. */
 export const DEFAULT_BOXES: Box[] = [
-  { id: 'A1',  status: 'volny', area: 305, price: 20000000 },
-  { id: 'A2',  status: 'volny', area: 305, price: 20000000 },
-  { id: 'A3',  status: 'volny', area: 305, price: 20000000 },
-  { id: 'A4',  status: 'volny', area: 305, price: 20000000 },
-  { id: 'A5',  status: 'volny', area: 305, price: 20000000 },
-  { id: 'A6',  status: 'volny', area: 305, price: 20000000 },
-  { id: 'A7',  status: 'volny', area: 305, price: 20000000 },
-  { id: 'A8',  status: 'volny', area: 305, price: 20000000 },
-  { id: 'A9',  status: 'volny', area: 305, price: 20000000 },
-  { id: 'A10', status: 'volny', area: 305, price: 20000000 },
-  { id: 'A11', status: 'volny', area: 305, price: 20000000 },
-  { id: 'A12', status: 'volny', area: 305, price: 20000000 },
-  { id: 'B1',  status: 'volny', area: 305, price: 20000000 },
-  { id: 'B2',  status: 'volny', area: 305, price: 20000000 },
-  { id: 'B3',  status: 'volny', area: 305, price: 20000000 },
-  { id: 'B4',  status: 'volny', area: 305, price: 20000000 },
-  { id: 'B5',  status: 'volny', area: 305, price: 20000000 },
+  { id: 'A1',  status: 'volny', area: 305.2, price: 20238000 },
+  { id: 'A2',  status: 'volny', area: 297.3, price: 19724500 },
+  { id: 'A3',  status: 'volny', area: 300.2, price: 19913000 },
+  { id: 'A4',  status: 'volny', area: 296.9, price: 19698500 },
+  { id: 'A5',  status: 'volny', area: 300.3, price: 19919500 },
+  { id: 'A6',  status: 'volny', area: 298.8, price: 19822000 },
+  { id: 'A7',  status: 'volny', area: 307.5, price: 20387500 },
+  { id: 'A8',  status: 'volny', area: 296.1, price: 19646500 },
+  { id: 'A9',  status: 'volny', area: 301.6, price: 20004000 },
+  { id: 'A10', status: 'volny', area: 297, price: 19705000 },
+  { id: 'A11', status: 'volny', area: 300.3, price: 19919500 },
+  { id: 'A12', status: 'volny', area: 298.6, price: 19809000 },
+  { id: 'B1',  status: 'volny', area: 298.3, price: 19889500 },
+  { id: 'B2',  status: 'volny', area: 310.6, price: 20489000 },
+  { id: 'B3',  status: 'volny', area: 297, price: 19705000 },
+  { id: 'B4',  status: 'volny', area: 302.1, price: 20036500 },
+  { id: 'B5',  status: 'volny', area: 297, price: 19705000 },
 ]
 
 export async function fetchBoxes(): Promise<Box[]> {
