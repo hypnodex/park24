@@ -3,7 +3,17 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import './App.css'
 import { STATUS_LABEL, formatCzk, submitInquiry, useBoxes, type Box } from './store'
 import { BOX_MAP_IMAGE, BOX_POLYGONS } from './boxMapPolygons'
-import { boxRooms, boxPlans, boxTotalArea, boxComputedPrice, boxParking, type Room } from './boxRooms'
+import { boxPlans, type Room } from './boxRooms'
+import {
+  DEFAULT_PHOTOS,
+  areaOf,
+  descriptionOf,
+  equipmentOf,
+  parkingOf,
+  photosOf,
+  priceOf,
+  roomsOf,
+} from './boxData'
 import { navigate } from './router'
 import { generateBoxPdf } from './boxPdf'
 import { BOX_STANDARDS } from './boxStandards'
@@ -74,14 +84,6 @@ function openBox(id: string, base = '') {
   navigate(`${base}/box/${encodeURIComponent(id)}`)
 }
 
-/** Public display area/price — real summed area + computed price (parking incl.),
- *  falling back to the stored values if room data is unavailable. */
-function displayArea(b: Box): number {
-  return boxTotalArea(b.id) ?? b.area
-}
-function displayPrice(b: Box): number {
-  return boxComputedPrice(b.id) ?? b.price
-}
 const fmtM2 = (n: number) => n.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -594,8 +596,8 @@ function BoxList({ boxes }: { boxes: Box[] }) {
             }}
           >
             <span className="bs-row-id">{b.id}</span>
-            <span className="bs-row-area">{fmtM2(displayArea(b))} m²</span>
-            <span className="bs-row-price">{formatCzk(displayPrice(b))}</span>
+            <span className="bs-row-area">{fmtM2(areaOf(b))} m²</span>
+            <span className="bs-row-price">{formatCzk(priceOf(b))}</span>
             <span className={`bs-status bs-status-${b.status}`}>
               {b.status === 'volny' && <span className="dot" />}
               {STATUS_LABEL[b.status]}
@@ -703,7 +705,7 @@ function BoxMap() {
               const box = byId.get(poly.id)
               const status = box?.status ?? 'volny'
               const tooltip = box
-                ? `Box ${poly.id} – ${STATUS_LABEL[status]} · ${fmtM2(displayArea(box))} m² · ${formatCzk(displayPrice(box))}`
+                ? `Box ${poly.id} – ${STATUS_LABEL[status]} · ${fmtM2(areaOf(box))} m² · ${formatCzk(priceOf(box))}`
                 : `Box ${poly.id}`
               const anchor = polygonTopCenter(poly.points)
               return (
@@ -1133,7 +1135,7 @@ function InquiryModal({ box, onClose }: { box: Box; onClose: () => void }) {
             <div className="modal-eyebrow">Poptávka boxu</div>
             <h3>{box.id}</h3>
             <p className="inquiry-meta">
-              {fmtM2(displayArea(box))} m² · {formatCzk(displayPrice(box))}
+              {fmtM2(areaOf(box))} m² · {formatCzk(priceOf(box))}
             </p>
 
             <form className="inquiry-form" onSubmit={handleSubmit} noValidate>
@@ -1291,9 +1293,15 @@ function RoomLegend({ rows }: { rows: Room[] }) {
 /** Full-bleed photo header: status, box name, price and the two actions. */
 function BoxHero({ box, onReserve }: { box: Box; onReserve: () => void }) {
   const available = box.status === 'volny'
+  // The box's cover photo; without one the CSS default (shared site photo) stays.
+  const cover = photosOf(box)[0]
   return (
     <section className="bx-hero" id="top">
-      <div className="bx-hero-bg" aria-hidden />
+      <div
+        className="bx-hero-bg"
+        aria-hidden
+        style={cover ? { backgroundImage: `url("${cover}")`, backgroundPosition: 'center' } : undefined}
+      />
       <div className="bx-hero-body">
         <div className="bx-hero-text">
           <span className={`bx-status bx-status-${box.status}`}>
@@ -1301,9 +1309,9 @@ function BoxHero({ box, onReserve }: { box: Box; onReserve: () => void }) {
             {STATUS_LABEL[box.status]}
           </span>
           <h1 className="bx-hero-title">Box {box.id}</h1>
-          <div className="bx-hero-price">{formatCzk(displayPrice(box))}</div>
+          <div className="bx-hero-price">{formatCzk(priceOf(box))}</div>
           <div className="bx-hero-sub">
-            {fmtM2(displayArea(box))} m² · {boxParking(box.id)}× parkování
+            {fmtM2(areaOf(box))} m² · {parkingOf(box)}× parkování
           </div>
         </div>
 
@@ -1334,22 +1342,27 @@ function BoxHero({ box, onReserve }: { box: Box; onReserve: () => void }) {
 
 /** Anchor tabs above the content. The underline follows the section you are
  *  actually looking at, so the bar doubles as a position indicator. */
-const BOX_SECTIONS = [
+type BoxSection = { id: string; label: string }
+
+const BOX_SECTIONS: BoxSection[] = [
   { id: 'about', label: 'Popis' },
   { id: 'plans', label: 'Půdorysy a rozměry' },
   { id: 'standards', label: 'Výbava & Standardy' },
   { id: 'live-map', label: 'Lokalita' },
-] as const
+]
 
-function SectionTabs() {
-  const [active, setActive] = useState<string>(BOX_SECTIONS[0].id)
+/** Tab for the box's own photo gallery, slotted in after the description. */
+const GALLERY_SECTION: BoxSection = { id: 'photos', label: 'Fotky' }
+
+function SectionTabs({ sections }: { sections: BoxSection[] }) {
+  const [active, setActive] = useState<string>(sections[0].id)
 
   useEffect(() => {
     const onScroll = () => {
       // The section whose top has last passed under the fixed header wins.
       const line = 140
-      let current: string = BOX_SECTIONS[0].id
-      for (const s of BOX_SECTIONS) {
+      let current: string = sections[0].id
+      for (const s of sections) {
         const el = document.getElementById(s.id)
         if (el && el.getBoundingClientRect().top <= line) current = s.id
       }
@@ -1362,11 +1375,11 @@ function SectionTabs() {
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onScroll)
     }
-  }, [])
+  }, [sections])
 
   return (
     <nav className="bx-tabbar" aria-label="Sekce stránky">
-      {BOX_SECTIONS.map((s) => (
+      {sections.map((s) => (
         <a
           key={s.id}
           href={`#${s.id}`}
@@ -1441,6 +1454,13 @@ export function BoxDetail({
   }, [])
 
   const box = boxes.find((b) => b.id === id)
+  const photos = box ? photosOf(box) : []
+  const hasGallery = photos.length > 0
+  const [lightboxAt, setLightboxAt] = useState<number | null>(null)
+  const sections = useMemo(
+    () => (hasGallery ? [BOX_SECTIONS[0], GALLERY_SECTION, ...BOX_SECTIONS.slice(1)] : BOX_SECTIONS),
+    [hasGallery],
+  )
 
   useEffect(() => {
     document.title = `Box ${id} — Park24`
@@ -1481,7 +1501,7 @@ export function BoxDetail({
   }
 
   const plans = boxPlans(box.id)
-  const rooms = boxRooms(box.id)
+  const rooms = roomsOf(box)
   const planSrc = floor === 'np1' ? plans.np1 : plans.np2
   const floorLabel = floor === 'np1' ? '1. NP' : '2. NP'
 
@@ -1501,19 +1521,15 @@ export function BoxDetail({
       <main className="bx">
         {/* Tabs and the first section share one group — 64px apart, not 145. */}
         <div className="bx-intro">
-          <SectionTabs />
+          <SectionTabs sections={sections} />
 
           {/* ── O boxu ─────────────────────────────────────────────── */}
           <section className="bx-block" id="about">
             <h2 className="bx-h2">O boxu</h2>
             <div className="bx-about">
-              <p>Moderní prostor pro vaše podnikání v Lelekovicích u Brna.</p>
-              <p>
-                Dvoupodlažní jednotka chytře kombinuje praktické zázemí v přízemí a reprezentativní
-                prostory v patře. Dole získáte variabilní sklad či výrobu s vlastním showroomem,
-                nahoře pak světlou kancelář a komfortní administrativní zázemí pro váš tým i schůzky
-                s klienty.
-              </p>
+              {descriptionOf(box).map((p, i) => (
+                <p key={i}>{p}</p>
+              ))}
             </div>
 
             <div className="bx-visuals">
@@ -1521,27 +1537,48 @@ export function BoxDetail({
                 <div className="bx-stat">
                   <img src="/assets/grid-02.svg" alt="" aria-hidden />
                   <div>
-                    <div className="bx-stat-num">{fmtM2(displayArea(box))} m²</div>
+                    <div className="bx-stat-num">{fmtM2(areaOf(box))} m²</div>
                     <div className="bx-stat-label">Podlahová plocha</div>
                   </div>
                 </div>
                 <div className="bx-stat">
                   <img src="/assets/car-01.svg" alt="" aria-hidden />
                   <div>
-                    <div className="bx-stat-num">{boxParking(box.id)}x</div>
+                    <div className="bx-stat-num">{parkingOf(box)}x</div>
                     <div className="bx-stat-label">Parkovací stání</div>
                   </div>
                 </div>
               </div>
+              {/* Second box photo here (the first is already the header). */}
               <img
                 className="bx-photo"
-                src="/assets/gallery/g3.jpg"
-                alt="Letecký pohled na areál Park24 v Lelekovicích"
+                src={photos[1] ?? photos[0] ?? DEFAULT_PHOTOS.about}
+                alt={hasGallery ? `Box ${box.id}` : 'Letecký pohled na areál Park24 v Lelekovicích'}
                 loading="lazy"
               />
             </div>
           </section>
         </div>
+
+        {/* ── Fotky (only once the box has photos of its own) ─────── */}
+        {hasGallery && (
+          <section className="bx-block" id="photos">
+            <h2 className="bx-h2">Fotky</h2>
+            <div className="cs-grid">
+              {photos.map((src, i) => (
+                <button
+                  key={src}
+                  type="button"
+                  className="cs-photo"
+                  onClick={() => setLightboxAt(i)}
+                  aria-label={`Zvětšit fotku ${i + 1} z ${photos.length}`}
+                >
+                  <img src={src} alt={`Box ${box.id} — fotka ${i + 1}`} loading="lazy" />
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* ── Půdorysy a rozměry ───────────────────────────────────── */}
         <section className="bx-block bx-block-center" id="plans">
@@ -1585,7 +1622,7 @@ export function BoxDetail({
           <h2 className="bx-h2">Výbava &amp; Standardy</h2>
 
           <ul className="bx-equip">
-            {['Energetická třída A', 'Klimatizace', 'Příprava na venkovní žaluzie', 'Denní světlo ve skladu ze světlíku'].map((e) => (
+            {equipmentOf(box).map((e) => (
               <li key={e}>
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12" />
@@ -1605,6 +1642,13 @@ export function BoxDetail({
       <Footer />
 
       {reserving && <InquiryModal box={box} onClose={() => setReserving(false)} />}
+      {lightboxAt !== null && (
+        <GalleryModal
+          images={photos.map((src, i) => ({ src, alt: `Box ${box.id} — fotka ${i + 1}` }))}
+          start={lightboxAt}
+          onClose={() => setLightboxAt(null)}
+        />
+      )}
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { formatCzk, type Box } from './store'
-import { boxRooms, boxPlans, boxTotalArea, boxComputedPrice, boxParking, type Room } from './boxRooms'
+import { boxPlans, type Room } from './boxRooms'
+import { DEFAULT_PHOTOS, areaOf, parkingOf, photosOf, priceOf, roomsOf } from './boxData'
 
 /**
  * Generates the one-page A4 landscape "box card" PDF and opens it in a new tab.
@@ -35,7 +36,7 @@ export async function generateBoxPdf(box: Box): Promise<void> {
 
     await drawSidebar(ctx, box)
     await drawDrawings(ctx, box)
-    await drawPhotoColumn(ctx)
+    await drawPhotoColumn(ctx, box)
 
     const img = canvas.toDataURL('image/jpeg', 0.92)
     const { jsPDF } = await import('jspdf') // lazy: keeps jsPDF out of the initial bundle
@@ -146,20 +147,20 @@ async function drawSidebar(ctx: CanvasRenderingContext2D, box: Box) {
   ctx.textBaseline = 'top'
   ctx.fillStyle = NAVY
   ctx.font = `700 34px ${DISPLAY}`
-  ctx.fillText(formatCzk(boxComputedPrice(box.id) ?? box.price), PAD + 24, 199)
+  ctx.fillText(formatCzk(priceOf(box)), PAD + 24, 199)
 
-  const area = boxTotalArea(box.id) ?? box.area
+  const area = areaOf(box)
   ctx.fillStyle = NAVY_72
   ctx.font = `400 15px ${BODY}`
   ctx.fillText(
-    `${area.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })} m² · ${boxParking(box.id)}× parkování`,
+    `${area.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })} m² · ${parkingOf(box)}× parkování`,
     PAD + 24,
     243,
   )
 
   // both room legends, stacked; the second one starts below whatever the first
   // one actually needs, so a longer 2. NP table can't collide with it
-  const rooms = boxRooms(box.id)
+  const rooms = roomsOf(box)
   let y = 333.5
   y = drawLegendBlock(ctx, '1. NP', rooms?.np1 ?? [], y)
   drawLegendBlock(ctx, '2. NP', rooms?.np2 ?? [], y + 42)
@@ -287,9 +288,10 @@ async function drawDrawings(ctx: CanvasRenderingContext2D, box: Box) {
   }
 }
 
-/** Vertical photo column at the right edge. */
-async function drawPhotoColumn(ctx: CanvasRenderingContext2D) {
-  const srcs = ['/assets/gallery/g1.jpg', '/assets/gallery/g2.jpg', '/assets/gallery/g5.jpg']
+/** Vertical photo column at the right edge: the box's own photos first,
+ *  topped up with the shared site photos. */
+async function drawPhotoColumn(ctx: CanvasRenderingContext2D, box: Box) {
+  const srcs = [...photosOf(box), ...DEFAULT_PHOTOS.card].slice(0, 3)
   const x = 1397
   const y0 = 118
   const w = 210

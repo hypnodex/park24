@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './Admin.css'
-import { boxComputedPrice, boxParking, boxTotalArea } from './boxRooms'
+import AdminBoxEditor from './AdminBoxEditor'
+import { areaOf, parkingOf, photosOf, priceOf } from './boxData'
+import { navigate, usePath } from './router'
 import {
   STATUS_LABEL,
   formatCzk,
@@ -77,6 +79,8 @@ type Tab = 'boxes' | 'inquiries'
 
 function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [tab, setTab] = useState<Tab>('boxes')
+  const path = usePath()
+  const editing = /^\/admin\/box\/([^/]+)\/?$/.exec(path)?.[1]
 
   return (
     <div className="adm-shell adm-dash">
@@ -90,26 +94,32 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         </div>
       </header>
 
-      <main className="adm-main">
-        <div className="adm-eyebrow">Administrace</div>
+      {editing ? (
+        <main className="adm-main">
+          <AdminBoxEditor id={decodeURIComponent(editing)} />
+        </main>
+      ) : (
+        <main className="adm-main">
+          <div className="adm-eyebrow">Administrace</div>
 
-        <div className="adm-tabs">
-          <button
-            className={`adm-tab${tab === 'boxes' ? ' active' : ''}`}
-            onClick={() => setTab('boxes')}
-          >
-            Správa boxů
-          </button>
-          <button
-            className={`adm-tab${tab === 'inquiries' ? ' active' : ''}`}
-            onClick={() => setTab('inquiries')}
-          >
-            Poptávky
-          </button>
-        </div>
+          <div className="adm-tabs">
+            <button
+              className={`adm-tab${tab === 'boxes' ? ' active' : ''}`}
+              onClick={() => setTab('boxes')}
+            >
+              Správa boxů
+            </button>
+            <button
+              className={`adm-tab${tab === 'inquiries' ? ' active' : ''}`}
+              onClick={() => setTab('inquiries')}
+            >
+              Poptávky
+            </button>
+          </div>
 
-        {tab === 'boxes' ? <BoxesTab /> : <InquiriesTab />}
-      </main>
+          {tab === 'boxes' ? <BoxesTab /> : <InquiriesTab />}
+        </main>
+      )}
     </div>
   )
 }
@@ -168,7 +178,7 @@ function BoxesTab() {
     <>
       <p className="adm-sub">
         Stav boxu se ukládá na server a okamžitě se promítne na veřejný web pro všechny návštěvníky.
-        Plocha, parkování i cena se počítají z půdorysů projektu, proto se tady needitují.
+        Fotky, popis, cenu a další parametry upravíte v detailu boxu (tlačítko Upravit).
       </p>
 
       <div className="adm-summary">
@@ -200,6 +210,7 @@ function BoxesTab() {
           <div role="columnheader">Parkování</div>
           <div role="columnheader">Cena</div>
           <div role="columnheader">Na webu</div>
+          <div role="columnheader" />
         </div>
 
         {draft.map((b, i) => (
@@ -220,13 +231,14 @@ function BoxesTab() {
             </div>
 
             <div className="adm-cell adm-cell-derived">
-              {(boxTotalArea(b.id) ?? b.area).toLocaleString('cs-CZ')} m²
+              {areaOf(b).toLocaleString('cs-CZ')} m²
             </div>
 
-            <div className="adm-cell adm-cell-derived">{boxParking(b.id)}×</div>
+            <div className="adm-cell adm-cell-derived">{parkingOf(b)}×</div>
 
             <div className="adm-cell adm-cell-derived">
-              {formatCzk(boxComputedPrice(b.id) ?? b.price)}
+              {formatCzk(priceOf(b))}
+              {b.content?.price != null && <span className="adm-tag">vlastní</span>}
             </div>
 
             <div className="adm-cell adm-cell-preview">
@@ -234,6 +246,19 @@ function BoxesTab() {
                 {b.status === 'volny' && <span className="dot" />}
                 {STATUS_LABEL[b.status]}
               </span>
+              {photosOf(b).length > 0 && (
+                <span className="adm-tag">{photosOf(b).length} foto</span>
+              )}
+            </div>
+
+            <div className="adm-cell adm-cell-edit">
+              <a
+                href={`/admin/box/${b.id}`}
+                className="adm-btn ghost adm-btn-sm"
+                onClick={(e) => { e.preventDefault(); navigate(`/admin/box/${b.id}`) }}
+              >
+                Upravit
+              </a>
             </div>
           </div>
         ))}

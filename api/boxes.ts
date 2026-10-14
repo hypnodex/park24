@@ -2,6 +2,9 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { Redis } from '@upstash/redis'
 
 const KV_KEY = 'park24:boxes'
+// Per-box detail edits (description, photos, price…), a hash keyed by box id.
+// Written by api/box-content.ts, merged into every box here.
+const CONTENT_KEY = 'park24:box-content'
 
 /* Seed / fallback data. Area and price mirror what boxRooms.ts computes from the
  * project drawings (area x 65 000 Kc + parking x 100 000 Kc); the public site
@@ -73,8 +76,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
     if (!redis) return res.json(DEFAULT_BOXES)
     try {
-      const boxes = await redis.get(KV_KEY)
-      return res.json(boxes ? withCurrentIds(boxes) : DEFAULT_BOXES)
+      const [stored, content] = await Promise.all([
+        redis.get(KV_KEY),
+        redis.hgetall<Record<string, unknown>>(CONTENT_KEY),
+      ])
+      const boxes = (stored ? withCurrentIds(stored) : DEFAULT_BOXES) as { id: string }[]
+      return res.json(
+        boxes.map((b) => (content?.[b.id] ? { ...b, content: content[b.id] } : b)),
+      )
     } catch {
       return res.json(DEFAULT_BOXES)
     }
@@ -96,7 +105,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Invalid boxes data' })
     }
 
-    const normalised = withCurrentIds(boxes)
+    // Only the list fields live under this key. The admin sends boxes as it
+    // received them, content included; that is saved by api/box-content.ts,
+    // so drop it here instead of storing a stale second copy.
+    const normalised = (withCurrentIds(boxes) as Record<string, unknown>[]).map(
+      ({ id, status, area, price }) => ({ id, status, area, price }),
+    )
     if (redis) await redis.set(KV_KEY, JSON.stringify(normalised))
     return res.json(normalised)
   }

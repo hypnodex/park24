@@ -69,29 +69,12 @@ export function boxRooms(id: string): BoxRooms | null {
   return v ? build(v) : null
 }
 
-// Sum of usable floor area across both floors (rooms with a known area).
-export function boxTotalArea(id: string): number | null {
-  const r = boxRooms(id)
-  if (!r) return null
-  const all = [...r.np1, ...r.np2]
-  if (all.some((x) => x.area == null)) return null
-  return Math.round(all.reduce((s, x) => s + (x.area ?? 0), 0) * 10) / 10
-}
-
 // Parking spaces from the site plan: 4 by default, 5 for B1, 3 for B2.
+// Area and price are derived in boxData.ts (where admin edits apply too).
 export function boxParking(id: string): number {
   if (id === 'B1') return 5
   if (id === 'B2') return 3
   return 4
-}
-
-// Price = real area × 65 000 Kč + parking spaces × 100 000 Kč. Null if area unknown.
-const PRICE_PER_M2 = 65000
-const PRICE_PER_PARKING = 100000
-export function boxComputedPrice(id: string): number | null {
-  const area = boxTotalArea(id)
-  if (area == null) return null
-  return Math.round(area * PRICE_PER_M2 + boxParking(id) * PRICE_PER_PARKING)
 }
 
 // Floor plans per box from the architect's export (Boxy_bez_vnejsich_kot):

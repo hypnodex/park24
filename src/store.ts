@@ -1,10 +1,27 @@
+import type { BoxRooms } from './boxRooms'
+
 export type Status = 'volny' | 'rezervovano' | 'prodano'
+
+/** What the admin changed on a box's detail. Every field is optional: a missing
+ *  field means "use the project default" (see boxData.ts), so later fixes to the
+ *  drawings still reach every box nobody has hand-edited. */
+export interface BoxContent {
+  description?: string
+  equipment?: string[]
+  /** Box-specific photos (Vercel Blob URLs). The first one is the cover. */
+  photos?: { url: string }[]
+  /** Fixed price in Kč; without it the price is computed from area + parking. */
+  price?: number
+  parking?: number
+  rooms?: BoxRooms
+}
 
 export interface Box {
   id: string
   status: Status
   area: number
   price: number
+  content?: BoxContent
 }
 
 export const STATUS_LABEL: Record<Status, string> = {
@@ -84,6 +101,53 @@ export async function saveBoxes(boxes: Box[]): Promise<boolean> {
   return res.ok
 }
 
+/** Saves one box's detail content. Returns the stored (sanitised) content, or
+ *  null if the server refused it. */
+export async function saveBoxContent(id: string, content: BoxContent): Promise<BoxContent | null> {
+  try {
+    const res = await fetch('/api/box-content', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify({ id, content }),
+    })
+    if (res.ok) return (await res.json()).content ?? {}
+  } catch { /* fall through */ }
+  return null
+}
+
+/** Shrinks a photo in the browser before upload: max 2000 px on the long side,
+ *  JPEG. Re-encoding also drops EXIF, which on phone photos includes the GPS
+ *  position. */
+async function shrinkPhoto(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
+  const scale = Math.min(1, 2000 / Math.max(bitmap.width, bitmap.height))
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.round(bitmap.width * scale)
+  canvas.height = Math.round(bitmap.height * scale)
+  canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+  bitmap.close()
+  return new Promise((resolve, reject) =>
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('encode failed'))), 'image/jpeg', 0.85),
+  )
+}
+
+/** Uploads a photo for a box and returns its public URL. */
+export async function uploadBoxPhoto(id: string, file: File): Promise<string> {
+  const jpeg = await shrinkPhoto(file)
+  const bytes = new Uint8Array(await jpeg.arrayBuffer())
+  let binary = ''
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+  }
+  const res = await fetch('/api/upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+    body: JSON.stringify({ id, data: btoa(binary) }),
+  })
+  if (!res.ok) throw new Error(`upload failed (${res.status})`)
+  return (await res.json()).url
+}
+
 export async function resetBoxes(): Promise<Box[]> {
   const res = await fetch('/api/boxes', {
     method: 'POST',
@@ -115,7 +179,8 @@ export function useBoxes() {
     return ok
   }, [])
 
-  return { boxes, loading, update, refresh }
+  // setLocal: reflect a change already saved elsewhere (e.g. box content)
+  return { boxes, loading, update, refresh, setLocal: setBoxesLocal }
 }
 
 /* ─── Inquiries (API-backed) ─────────────────────────────────────────── */
