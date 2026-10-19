@@ -251,3 +251,6 @@ export function useInquiries() {
 export function formatCzk(n: number): string {
   return n.toLocaleString('cs-CZ') + ' Kč'
 }
+
+/** Every price on the site and the PDF card is without VAT. */
+export const VAT_NOTE = 'bez 21% DPH'

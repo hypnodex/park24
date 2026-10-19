@@ -1,4 +1,4 @@
-import { formatCzk, type Box } from './store'
+import { VAT_NOTE, formatCzk, type Box } from './store'
 import { boxPlans, type Room } from './boxRooms'
 import { DEFAULT_PHOTOS, areaOf, parkingOf, photosOf, priceOf, roomsOf } from './boxData'
 
@@ -147,13 +147,27 @@ async function drawSidebar(ctx: CanvasRenderingContext2D, box: Box) {
   ctx.textBaseline = 'top'
   ctx.fillStyle = NAVY
   ctx.font = `700 34px ${DISPLAY}`
-  ctx.fillText(formatCzk(priceOf(box)), PAD + 24, 199)
+  const price = formatCzk(priceOf(box))
+  const priceM = ctx.measureText(price)
+  ctx.fillText(price, PAD + 24, 199)
+
+  // "bez DPH" sits on the price's baseline; a price too long to share the
+  // line pushes it onto the area line instead
+  ctx.font = `400 15px ${BODY}`
+  const vatX = PAD + 24 + priceM.width + 10
+  const vatFits = vatX + ctx.measureText(VAT_NOTE).width <= PAD + CARD_W - 24
+  if (vatFits) {
+    ctx.fillStyle = NAVY_60
+    ctx.textBaseline = 'alphabetic'
+    ctx.fillText(VAT_NOTE, vatX, 199 + priceM.actualBoundingBoxDescent)
+    ctx.textBaseline = 'top'
+  }
 
   const area = areaOf(box)
   ctx.fillStyle = NAVY_72
-  ctx.font = `400 15px ${BODY}`
   ctx.fillText(
-    `${area.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })} m² · ${parkingOf(box)}× parkování`,
+    `${area.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })} m² · ${parkingOf(box)}× parkování` +
+      (vatFits ? '' : ` · ${VAT_NOTE}`),
     PAD + 24,
     243,
   )

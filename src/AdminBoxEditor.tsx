@@ -353,7 +353,7 @@ export default function AdminBoxEditor({ id }: { id: string }) {
         <h2>Parametry</h2>
         <div className="adm-fields">
           <label className="adm-field">
-            <span>Cena (Kč)</span>
+            <span>Cena bez DPH (Kč)</span>
             <input
               className="adm-input"
               inputMode="numeric"

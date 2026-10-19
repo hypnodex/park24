@@ -2035,6 +2035,12 @@ textarea.field-input {
   flex-direction: column;
   gap: 6px;
 }
+.bs-vat-note {
+  margin: 12px 0 0;
+  padding: 0 clamp(14px, 1.5vw, 22px);
+  font-size: 13px;
+  color: rgba(31, 43, 94, 0.6);
+}
 .bs-row {
   position: relative;
   display: grid;
@@ -2372,9 +2378,10 @@ textarea.field-input {
     grid-template-columns: 1fr;
     gap: clamp(24px, 4vw, 40px);
   }
-  .bs-list {
+  .bs-list,
+  .bs-vat-note {
     max-width: 640px;
-    margin: 0 auto;
+    margin-inline: auto;
     width: 100%;
   }
   .vp-card {
@@ -2663,6 +2670,12 @@ textarea.field-input {
   font-weight: 700;
   font-size: clamp(24px, 2vw, 34px);
   color: #fff;
+}
+.bx-hero-vat {
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: clamp(13px, 0.9vw, 15px);
+  color: rgba(255, 255, 255, 0.72);
 }
 .bx-hero-sub {
   margin-top: 3px;

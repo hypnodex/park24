@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import './App.css'
-import { STATUS_LABEL, formatCzk, submitInquiry, useBoxes, type Box } from './store'
+import { STATUS_LABEL, VAT_NOTE, formatCzk, submitInquiry, useBoxes, type Box } from './store'
 import { BOX_MAP_IMAGE, BOX_POLYGONS } from './boxMapPolygons'
 import { boxPlans, type Room } from './boxRooms'
 import {
@@ -578,51 +578,54 @@ const PdfIcon = () => (
 function BoxList({ boxes }: { boxes: Box[] }) {
   const { base } = useContext(HomeVariantContext)
   return (
-    <ul className="bs-list">
-      {boxes.map((b) => {
-        return (
-          <li
-            key={b.id}
-            className={`bs-row bs-row-${b.status}`}
-            tabIndex={0}
-            role="button"
-            title={`Box ${b.id} — zobrazit detail`}
-            onClick={() => openBox(b.id, base)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                openBox(b.id, base)
-              }
-            }}
-          >
-            <span className="bs-row-id">{b.id}</span>
-            <span className="bs-row-area">{fmtM2(areaOf(b))} m²</span>
-            <span className="bs-row-price">{formatCzk(priceOf(b))}</span>
-            <span className={`bs-status bs-status-${b.status}`}>
-              {b.status === 'volny' && <span className="dot" />}
-              {STATUS_LABEL[b.status]}
-            </span>
-            <button
-              type="button"
-              className="bs-pdf"
-              aria-label={`Otevřít kartu boxu ${b.id} v PDF`}
-              title="Otevřít kartu (PDF)"
-              onClick={(e) => {
-                e.stopPropagation()
-                generateBoxPdf(b)
+    <div className="bs-side">
+      <ul className="bs-list">
+        {boxes.map((b) => {
+          return (
+            <li
+              key={b.id}
+              className={`bs-row bs-row-${b.status}`}
+              tabIndex={0}
+              role="button"
+              title={`Box ${b.id} — zobrazit detail`}
+              onClick={() => openBox(b.id, base)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  openBox(b.id, base)
+                }
               }}
             >
-              <PdfIcon />
-            </button>
-            <span className="bs-chevron" aria-hidden>
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </span>
-          </li>
-        )
-      })}
-    </ul>
+              <span className="bs-row-id">{b.id}</span>
+              <span className="bs-row-area">{fmtM2(areaOf(b))} m²</span>
+              <span className="bs-row-price">{formatCzk(priceOf(b))}</span>
+              <span className={`bs-status bs-status-${b.status}`}>
+                {b.status === 'volny' && <span className="dot" />}
+                {STATUS_LABEL[b.status]}
+              </span>
+              <button
+                type="button"
+                className="bs-pdf"
+                aria-label={`Otevřít kartu boxu ${b.id} v PDF`}
+                title="Otevřít kartu (PDF)"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  generateBoxPdf(b)
+                }}
+              >
+                <PdfIcon />
+              </button>
+              <span className="bs-chevron" aria-hidden>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+      <p className="bs-vat-note">Ceny jsou uvedeny {VAT_NOTE}.</p>
+    </div>
   )
 }
 
@@ -705,7 +708,7 @@ function BoxMap() {
               const box = byId.get(poly.id)
               const status = box?.status ?? 'volny'
               const tooltip = box
-                ? `Box ${poly.id} – ${STATUS_LABEL[status]} · ${fmtM2(areaOf(box))} m² · ${formatCzk(priceOf(box))}`
+                ? `Box ${poly.id} – ${STATUS_LABEL[status]} · ${fmtM2(areaOf(box))} m² · ${formatCzk(priceOf(box))} ${VAT_NOTE}`
                 : `Box ${poly.id}`
               const anchor = polygonTopCenter(poly.points)
               return (
@@ -1135,7 +1138,7 @@ function InquiryModal({ box, onClose }: { box: Box; onClose: () => void }) {
             <div className="modal-eyebrow">Poptávka boxu</div>
             <h3>{box.id}</h3>
             <p className="inquiry-meta">
-              {fmtM2(areaOf(box))} m² · {formatCzk(priceOf(box))}
+              {fmtM2(areaOf(box))} m² · {formatCzk(priceOf(box))} {VAT_NOTE}
             </p>
 
             <form className="inquiry-form" onSubmit={handleSubmit} noValidate>
@@ -1309,7 +1312,9 @@ function BoxHero({ box, onReserve }: { box: Box; onReserve: () => void }) {
             {STATUS_LABEL[box.status]}
           </span>
           <h1 className="bx-hero-title">Box {box.id}</h1>
-          <div className="bx-hero-price">{formatCzk(priceOf(box))}</div>
+          <div className="bx-hero-price">
+            {formatCzk(priceOf(box))} <span className="bx-hero-vat">{VAT_NOTE}</span>
+          </div>
           <div className="bx-hero-sub">
             {fmtM2(areaOf(box))} m² · {parkingOf(box)}× parkování
           </div>
