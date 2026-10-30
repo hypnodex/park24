@@ -3,13 +3,12 @@
 
    Kategorie a jejich pořadí přebírají návrh z Figmy (frame „subpage",
    node 222:2423): Podlahy a povrchy / Vytápění a klimatizace / Osvětlení /
-   Výbava / Doplňky. Návrh ukazuje jen zabalené řádky, obsah v něm není.
+   Výbava / Doplňky, doplněné o Konstrukci.
 
-   ⚠️  TEXTY JSOU NÁVRH K REVIZI — nejsou potvrzené projektantem.
-   Vychází z údajů, které už na webu jsou (pasivní energetický standard,
-   energetická třída A, klimatizace, příprava na venkovní žaluzie, světlík
-   ve skladu, světlé výšky z legendy místností). Zbytek je typový odhad pro
-   halu tohoto druhu a před spuštěním ho musí potvrdit projektant.
+   Obsah je výtažek z dokumentu „Technická specifikace a standardy boxů"
+   (standardy stavby.docx, 10/2026). Celé znění je v PDF Standardy boxu,
+   které se generuje ze scripts/standards-pdf/content.ts — při změně
+   dokumentu upravte oba soubory.
    ════════════════════════════════════════════════════════════════════════ */
 
 export type StandardGroup = {
@@ -20,53 +19,68 @@ export type StandardGroup = {
 
 export const BOX_STANDARDS: StandardGroup[] = [
   {
+    key: 'konstrukce',
+    title: 'Konstrukce',
+    items: [
+      'Box 11 × 22,3 m, celková výška objektu 8,20 m po atiku.',
+      'Železobetonový prefabrikovaný skelet na vrtaných pilotách, stropy vestavby z předpjatých panelů SPIROLL.',
+      'Obvodový plášť ze sendvičových panelů tl. 120 mm s jádrem PUR.',
+      'Plochá střecha se zvýšenou atikou, tepelná izolace EPS 180 mm a minerální vlna 2× 30 mm.',
+      'Světlá výška skladu 6 m po spodní hranu vazníků, administrativy 3,55 m (1. NP) a 3,30 m (2. NP).',
+    ],
+  },
+  {
     key: 'podlahy',
     title: 'Podlahy a povrchy',
     items: [
-      'Skladová část: drátkobetonová deska s vsypem a povrchovým vytvrzením.',
-      'Kanceláře a zázemí: připraveno pod finální nášlapnou vrstvu dle výběru klienta.',
-      'Hygienické zázemí a úklidová komora: keramická dlažba včetně soklu.',
-      'Stěny a stropy: vnitřní omítky s finálním bílým nátěrem.',
+      'Sklad a vjezd: drátkobetonová deska tl. 280 mm s únosností 8 000 kg/m² a metalickým vsypem.',
+      'Showroom a zázemí v 1. NP: keramická dlažba 600 × 600 mm, v kancelářích 2. NP koberec.',
+      'WC a předsíně: keramická dlažba a obklad do výšky 1 200 mm.',
+      'Administrativa: sádrokartonové stěny a podhledy, bílá výmalba.',
+      'Sklad bez podhledů — přiznaný trapézový plech.',
     ],
   },
   {
     key: 'vytapeni',
     title: 'Vytápění a klimatizace',
     items: [
-      'Klimatizace v kancelářských prostorech — součást standardu.',
-      'Samostatný zdroj tepla pro každou jednotku.',
-      'Podlahové vytápění v kancelářích a zázemí, temperování skladové části.',
-      'Nucené větrání zázemí a WC, samostatné podružné měření energií.',
+      'Administrativa a showroom: klimatizační jednotky pro chlazení i vytápění, ovládání nástěnným termostatem.',
+      'Dvě vnitřní jednotky v kancelářích, jedna v showroomu, venkovní jednotky na střeše.',
+      'Sklad a vjezd: plynové teplovzdušné jednotky Sahara.',
+      'Nucené větrání WC a úklidové komory, ostatní prostory větrány přirozeně.',
+      'Ohřev teplé vody elektrickým bojlerem.',
     ],
   },
   {
     key: 'osvetleni',
     title: 'Osvětlení',
     items: [
-      'Denní světlo ve skladové části ze střešního světlíku.',
-      'Prosklené stěny v kancelářích a showroomu.',
-      'LED osvětlení skladu, kanceláří i zázemí.',
-      'Osvětlení parkovacích stání a vstupu do jednotky.',
+      'LED svítidla v celém boxu a nouzové osvětlení.',
+      'Denní světlo ve skladu ze 4 neotevíravých světlíků, v kuchyňce světlovod.',
+      'Showroom se svítidly zapuštěnými do podhledu, kanceláře se zavěšenými LED svítidly.',
+      'Hliníková okna v antracitové RAL 7016, otevíravá i neotevíravá.',
     ],
   },
   {
     key: 'vybava',
     title: 'Výbava',
     items: [
-      'Energetická třída A, celá hala v pasivním energetickém standardu.',
-      'Vjezdová sekční vrata do skladové části s elektrickým pohonem.',
-      'Samostatný vstup do kancelářské části.',
-      'Kompletní hygienické zázemí v 1. NP i ve 2. NP.',
+      'Sekční průmyslová vrata s elektrickým ovládáním a prosvětlovacími prvky.',
+      'Prosklené hliníkové vstupní dveře, interiérové dveře CPL v šedé.',
+      'Příkon 3× 40 A, zásuvková skříň ve skladu 2× 230 V / 16 A a 1× 400 V / 16 A.',
+      'Datový rozvaděč ve 2. NP, zásuvky PC v administrativě.',
+      'Kuchyňka s přípravou pro linku a spotřebiče, WC v 1. i 2. NP.',
     ],
   },
   {
     key: 'doplnky',
-    title: 'Doplňky',
+    title: 'Přípojky a doplňky',
     items: [
-      'Příprava na venkovní žaluzie u prosklených ploch (kabeláž a kotvení).',
-      'Příprava pro EZS a kamerový systém jednotky.',
-      'Připravenost střechy pro instalaci fotovoltaiky.',
-      'Sousední boxy lze propojit do jednoho většího celku — řešíme individuálně.',
+      'Vlastní přípojka kanalizace, vody, plynu a elektřiny pro každý box.',
+      'Vlastní elektroměr, plynoměr na fasádě a podružný vodoměr.',
+      'Dešťová voda odváděna do vsakovacích nádrží v areálu.',
+      'Plochu lze zvětšit dodatečnou vestavbou nebo spojením dvou sousedních boxů.',
+      'Kamerový a zabezpečovací systém není součástí standardu.',
     ],
   },
 ]
