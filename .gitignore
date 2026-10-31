@@ -25,5 +25,3 @@ dist-ssr
 .vercel
 .env*
 
-# standards PDF build preview (npm run pdf:standards -- --html)
-scripts/standards-pdf/preview.html

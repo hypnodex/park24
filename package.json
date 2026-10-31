@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "pdf:standards": "node scripts/standards-pdf/build.ts"
+    "pdf:standards": "uv run scripts/standards-pdf/finalize.py"
   },
   "dependencies": {
     "@upstash/redis": "^1.38.0",

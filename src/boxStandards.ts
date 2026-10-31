@@ -7,8 +7,8 @@
 
    Obsah je výtažek z dokumentu „Technická specifikace a standardy boxů"
    (standardy stavby.docx, 10/2026). Celé znění je v PDF Standardy boxu,
-   které se generuje ze scripts/standards-pdf/content.ts — při změně
-   dokumentu upravte oba soubory.
+   které se exportuje z Figmy (viz scripts/standards-pdf/finalize.py) —
+   při změně dokumentu upravte Figmu i tento soubor.
    ════════════════════════════════════════════════════════════════════════ */
 
 export type StandardGroup = {
