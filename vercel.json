@@ -1,4 +1,13 @@
 {
+  "headers": [
+    {
+      "source": "/assets/Park24-standardy-boxu.pdf",
+      "has": [{ "type": "query", "key": "dl" }],
+      "headers": [
+        { "key": "Content-Disposition", "value": "attachment; filename=\"Park24-standardy-boxu.pdf\"" }
+      ]
+    }
+  ],
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]

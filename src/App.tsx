@@ -502,15 +502,12 @@ function Features() {
   )
 }
 
-/** Panel linking to the box-standards PDF; opens in a new tab. */
+const STANDARDS_PDF = '/assets/Park24-standardy-boxu.pdf'
+
+/** Panel with the box-standards PDF: open in a new tab, or download to the device. */
 function StandardsDownload() {
   return (
-    <a
-      className="std-download"
-      href="/assets/Park24-standardy-boxu.pdf"
-      target="_blank"
-      rel="noopener"
-    >
+    <div className="std-download">
       <div className="std-download-icon">
         <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -525,14 +522,30 @@ function StandardsDownload() {
           Co všechno je v ceně a z čeho je hala postavena — kompletní přehled v PDF.
         </div>
       </div>
-      <span className="std-download-cta">
-        Otevřít PDF
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="3" y1="12" x2="21" y2="12" />
-          <polyline points="14 5 21 12 14 19" />
-        </svg>
-      </span>
-    </a>
+      <div className="std-download-actions">
+        <a className="std-download-cta" href={STANDARDS_PDF} target="_blank" rel="noopener">
+          Otevřít PDF
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <polyline points="14 5 21 12 14 19" />
+          </svg>
+        </a>
+        {/* ?dl=1 → Content-Disposition: attachment (vercel.json), pro prohlížeče,
+            které atribut download ignorují (iOS) */}
+        <a
+          className="std-download-cta secondary"
+          href={`${STANDARDS_PDF}?dl=1`}
+          download="Park24-standardy-boxu.pdf"
+        >
+          Stáhnout
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 3v12" />
+            <polyline points="7 10 12 15 17 10" />
+            <path d="M4 19h16" />
+          </svg>
+        </a>
+      </div>
+    </div>
   )
 }
 
